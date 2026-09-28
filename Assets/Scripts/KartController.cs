@@ -8,6 +8,10 @@ public class KartController : MonoBehaviour
     public float maxSpeed = 25f; // Maximum speed
     public float turnSpeed = 90f; // Steering speed
 
+    [Header("Health")]
+    public float maxHealth = 100f; // Maximum health of the kart
+    public float health = 100f; // Current health of the kart
+
     [Header("Friction")]
     public float normalFriction = 4f; // Normal sideways grip
     public float driftFriction = 1.5f; // Drift friction
@@ -20,6 +24,8 @@ public class KartController : MonoBehaviour
 
     private float forwardInput;
     private float steeringInput;
+
+    private bool isFrozen = false;
 
     void Start()
     {
@@ -41,6 +47,13 @@ public class KartController : MonoBehaviour
 
     void Update()
     {
+        if (isFrozen)
+        {
+            forwardInput = 0f;
+            steeringInput = 0f;
+            return;
+        }
+
         forwardInput = 0f;
         steeringInput = 0f;
 
@@ -81,6 +94,13 @@ public class KartController : MonoBehaviour
     {
         if (rb == null)
             return;
+
+        if (isFrozen)
+        {
+            rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
 
         MoveKart();
         SidewaysMovement(); 
@@ -184,5 +204,21 @@ public class KartController : MonoBehaviour
             acceleration;
 
         rb.AddForce(sidewaysForce, ForceMode.Acceleration);
+    }
+
+    public void SetFrozen(bool frozen)
+    {
+        isFrozen = frozen;
+
+        // Immediately stop the kart when frozen
+        if (frozen && rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+        }
+    }
+
+    public void RegenHealth()
+    {
+        health = Mathf.Min(health + 60f, maxHealth);
     }
 }
