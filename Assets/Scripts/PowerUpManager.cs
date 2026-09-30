@@ -62,9 +62,8 @@ public class PowerUpManager : MonoBehaviour
 
             else if (activeType == "freeze" && freezePowerUpActive == false)
             {
-                // Find every kart in the scene
-                KartController[] allKarts =
-                    FindObjectsByType<KartController>(FindObjectsSortMode.None);
+                // Find every kart in the scene by looking for objects of type KartController and not sorting them
+                KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
                 // Freeze every kart except the player
                 foreach (KartController kart in allKarts)
@@ -126,7 +125,7 @@ public class PowerUpManager : MonoBehaviour
 
             if (freezePowerUpTimer <= 0f)
             {
-                // Find all karts again
+                // Find all karts again 
                 KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
                 // Unfreeze every kart except the player
