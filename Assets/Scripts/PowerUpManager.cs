@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PowerUpManager : MonoBehaviour
 {
-    private bool speedPowerUpActive = false; 
+    private bool speedPowerUpActive = false;
     private bool freezePowerUpActive = false;
     private bool gunPowerUpActive = false;
     private bool missilePowerUpActive = false;
@@ -14,7 +14,7 @@ public class PowerUpManager : MonoBehaviour
     private float missilePowerUpTimer = 0f;
 
     [Header("Camera Configuration")]
-    public Camera playerCamera; 
+    public Camera playerCamera;
 
     private KartController playerKart;
 
@@ -29,10 +29,10 @@ public class PowerUpManager : MonoBehaviour
         if (col.CompareTag("PickUp"))
         {
             // Get the pickup's properties so we can find out its type and duration
-            PickUpProperties pickupHit = col.GetComponent<PickUpProperties>();
+            PowerupProperties pickupHit = col.GetComponent<PowerupProperties>();
 
             string activeType = pickupHit.type;
-            
+
             if (activeType == "random")
             {
                 int roll = Random.Range(0, 5);
@@ -118,7 +118,7 @@ public class PowerUpManager : MonoBehaviour
                 speedPowerUpActive = false;
             }
         }
-        
+
         if (freezePowerUpActive)
         {
             freezePowerUpTimer -= Time.deltaTime;
