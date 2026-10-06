@@ -1,76 +1,179 @@
 using UnityEngine;
-using TMPro;
 
 public class RaceManager : MonoBehaviour
 {
+    [Header("Player Car Prefabs")]
+    public GameObject[] carPrefabs;
+
+    [Header("Player Start Position")]
+    public Transform playerSpawn;
+
     [Header("Race Settings")]
-    public int totalCheckpoints = 4;
     public int totalLaps = 3;
 
-    [Header("Race Progress")]
-    public int currentLap = 1;
-    public int nextCheckpoint = 1;
-    public bool raceFinished = false;
-
-    [Header("UI")]
-    public TMP_Text lapText;
-    public TMP_Text finishText;
-
-    [Header("Race Timer")]
+    [Header("Race UI")]
+    public Countdown countdown;
+    public LapCounterUI lapCounter;
     public RaceTimer raceTimer;
 
-    private KartController playerKart;
-    private Rigidbody kartRigidbody;
+    [Header("Checkpoint Settings")]
+    public int totalCheckpoints = 4;
+
+    [HideInInspector]
+    public bool raceFinished = false;
+
+    private GameObject playerCar;
+
+    private int currentCheckpoint = -1;
+    private int currentLap = 1;
 
     void Start()
     {
-        currentLap = 1;
-        nextCheckpoint = 1;
-        raceFinished = false;
+        SpawnPlayer();
 
-        // Finds the player's kart
-        playerKart = FindAnyObjectByType<KartController>();
+        // Freeze the player before countdown
+        KartController kart =
+            playerCar.GetComponent<KartController>();
 
-        if (playerKart != null)
+        if (kart != null)
         {
-            kartRigidbody = playerKart.GetComponent<Rigidbody>();
+            kart.SetFrozen(true);
         }
 
-        UpdateLapUI();
-
-        // Hides finish message at the beginning
-        if (finishText != null)
+        // Set initial lap display
+        if (lapCounter != null)
         {
-            finishText.gameObject.SetActive(false);
+            lapCounter.SetLap(
+                currentLap,
+                totalLaps
+            );
+        }
+
+        // Start countdown
+        if (countdown != null)
+        {
+            countdown.raceManager = this;
+            countdown.StartCountdown();
+        }
+        else
+        {
+            Debug.LogError(
+                "Countdown is not assigned to RaceManager!"
+            );
+        }
+    }
+
+    void SpawnPlayer()
+    {
+        int selectedKart =
+            PlayerPrefs.GetInt("SelectedKart", 0);
+
+        if (carPrefabs == null ||
+            carPrefabs.Length == 0)
+        {
+            Debug.LogError(
+                "No car prefabs assigned to RaceManager!"
+            );
+            return;
+        }
+
+        if (playerSpawn == null)
+        {
+            Debug.LogError(
+                "PlayerSpawnPoint is not assigned!"
+            );
+            return;
+        }
+
+        if (selectedKart < 0 ||
+            selectedKart >= carPrefabs.Length)
+        {
+            selectedKart = 0;
+        }
+
+        playerCar = Instantiate(
+            carPrefabs[selectedKart],
+            playerSpawn.position,
+            playerSpawn.rotation
+        );
+
+        Debug.Log(
+            "Player spawned: " +
+            playerCar.name
+        );
+
+        // Make sure the spawned car is the Player
+        playerCar.tag = "Player";
+
+        // Camera
+        Camera mainCamera = Camera.main;
+
+        if (mainCamera != null)
+        {
+            CameraFollow cameraFollow =
+                mainCamera.GetComponent<CameraFollow>();
+
+            if (cameraFollow != null)
+            {
+                cameraFollow.target =
+                    playerCar.transform;
+            }
+            else
+            {
+                Debug.LogError(
+                    "CameraFollow is missing from Main Camera!"
+                );
+            }
+        }
+        else
+        {
+            Debug.LogError(
+                "No Main Camera found!"
+            );
+        }
+    }
+
+    public void StartRace()
+    {
+        Debug.Log("RACE STARTED!");
+
+        if (playerCar != null)
+        {
+            KartController kart =
+                playerCar.GetComponent<KartController>();
+
+            if (kart != null)
+            {
+                kart.SetFrozen(false);
+            }
+        }
+
+        if (raceTimer != null)
+        {
+            raceTimer.StartTimer();
         }
     }
 
     public void CheckpointPassed(int checkpointNumber)
     {
-        // Donsent accept checkpoints after the race is finished
         if (raceFinished)
             return;
 
-        // Only accepts the checkpoint we are currently expecting
-        if (checkpointNumber != nextCheckpoint)
+        // Checkpoints must be passed in order
+        if (checkpointNumber != currentCheckpoint + 1)
         {
-            Debug.Log(
-                "Wrong checkpoint! Expected: " +
-                nextCheckpoint +
-                " | Received: " +
-                checkpointNumber
-            );
-
             return;
         }
 
-        Debug.Log("Checkpoint " + checkpointNumber + " passed!");
+        currentCheckpoint = checkpointNumber;
 
-        // Moves to the next checkpoint
-        nextCheckpoint++;
+        Debug.Log(
+            "Checkpoint passed: " +
+            checkpointNumber
+        );
 
-        // Means Player has passed all four checkpoints
-        if (nextCheckpoint > totalCheckpoints)
+        // Last checkpoint reached
+        if (currentCheckpoint >= totalCheckpoints - 1)
         {
             CompleteLap();
         }
@@ -78,31 +181,27 @@ public class RaceManager : MonoBehaviour
 
     void CompleteLap()
     {
-        Debug.Log("All checkpoints passed!");
+        currentCheckpoint = -1;
 
-        // Checks if this was the final lap
         if (currentLap >= totalLaps)
         {
             FinishRace();
             return;
         }
 
-        // Moves to the next lap
         currentLap++;
 
-        // Starts checkpoint sequence again
-        nextCheckpoint = 1;
+        Debug.Log(
+            "Lap completed! Current lap: " +
+            currentLap
+        );
 
-        Debug.Log("Lap completed! Current lap: " + currentLap);
-
-        UpdateLapUI();
-    }
-
-    void UpdateLapUI()
-    {
-        if (lapText != null)
+        if (lapCounter != null)
         {
-            lapText.text = "LAP " + currentLap + "/" + totalLaps;
+            lapCounter.SetLap(
+                currentLap,
+                totalLaps
+            );
         }
     }
 
@@ -110,38 +209,22 @@ public class RaceManager : MonoBehaviour
     {
         raceFinished = true;
 
-        Debug.Log("RACE COMPLETE!");
+        Debug.Log("RACE FINISHED!");
 
-        // STOPS THE TIMER
+        if (playerCar != null)
+        {
+            KartController kart =
+                playerCar.GetComponent<KartController>();
+
+            if (kart != null)
+            {
+                kart.SetFrozen(true);
+            }
+        }
+
         if (raceTimer != null)
         {
             raceTimer.StopTimer();
-        }
-
-        // STOPS THE KART
-        if (kartRigidbody != null)
-        {
-            kartRigidbody.linearVelocity = Vector3.zero;
-            kartRigidbody.angularVelocity = Vector3.zero;
-        }
-
-        // DISABLES KART CONTROLS
-        if (playerKart != null)
-        {
-            playerKart.enabled = false;
-        }
-
-        // CHANGES LAP TEXT
-        if (lapText != null)
-        {
-            lapText.text = "RACE COMPLETE!";
-        }
-
-        // SHOWS FINISH MESSAGE
-        if (finishText != null)
-        {
-            finishText.gameObject.SetActive(true);
-            finishText.text = "RACE COMPLETE!";
         }
     }
 }
