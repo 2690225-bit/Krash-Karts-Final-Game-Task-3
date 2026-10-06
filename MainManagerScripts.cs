@@ -4,76 +4,89 @@ using TMPro;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("Panels")]
-    public GameObject homePanel;
+    [Header("Main Menu")]
+    public GameObject startButton;
+
+    [Header("Kart Selection")]
     public GameObject kartSelectPanel;
 
     [Header("Racer Name")]
     public TMP_InputField racerNameInput;
 
-    [Header("Kart Display")]
-    public GameObject[] karts;
+    [Header("Kart Images")]
+    public GameObject[] kartImages;
 
     private int currentKart = 0;
 
     void Start()
     {
-        homePanel.SetActive(true);
-        kartSelectPanel.SetActive(false);
+        if (startButton != null)
+            startButton.SetActive(true);
+
+        if (kartSelectPanel != null)
+            kartSelectPanel.SetActive(false);
 
         ShowKart();
     }
 
     public void StartRaceSetup()
     {
-        homePanel.SetActive(false);
-        kartSelectPanel.SetActive(true);
+        if (startButton != null)
+            startButton.SetActive(false);
+
+        if (kartSelectPanel != null)
+            kartSelectPanel.SetActive(true);
+
+        ShowKart();
     }
 
     public void NextKart()
     {
+        if (kartImages.Length == 0)
+            return;
+
         currentKart++;
 
-        if (currentKart >= karts.Length)
-        {
+        if (currentKart >= kartImages.Length)
             currentKart = 0;
-        }
 
         ShowKart();
     }
 
     public void PreviousKart()
     {
+        if (kartImages.Length == 0)
+            return;
+
         currentKart--;
 
         if (currentKart < 0)
-        {
-            currentKart = karts.Length - 1;
-        }
+            currentKart = kartImages.Length - 1;
 
         ShowKart();
     }
 
-    void ShowKart()
+    private void ShowKart()
     {
-        for (int i = 0; i < karts.Length; i++)
+        for (int i = 0; i < kartImages.Length; i++)
         {
-            karts[i].SetActive(i == currentKart);
+            if (kartImages[i] != null)
+                kartImages[i].SetActive(i == currentKart);
         }
     }
 
     public void ConfirmSelection()
     {
-        string racerName = racerNameInput.text;
+        string racerName = "Racer";
 
-        if (string.IsNullOrWhiteSpace(racerName))
+        if (racerNameInput != null &&
+            !string.IsNullOrWhiteSpace(racerNameInput.text))
         {
-            racerName = "Racer";
+            racerName = racerNameInput.text;
         }
 
         PlayerPrefs.SetString("RacerName", racerName);
         PlayerPrefs.SetInt("SelectedKart", currentKart);
-
         PlayerPrefs.Save();
 
         SceneManager.LoadScene("RaceScene");
