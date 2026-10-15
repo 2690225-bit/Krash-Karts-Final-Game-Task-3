@@ -1,24 +1,25 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class KartController : MonoBehaviour
 {
     [Header("Movement")]
-    public float acceleration = 20f; // How quickly the kart accelerates
-    public float maxSpeed = 25f; // Maximum speed
-    public float turnSpeed = 90f; // Steering speed
+    public float acceleration = 20f;
+    public float maxSpeed = 25f;
+    public float turnSpeed = 90f;
 
     [Header("Health")]
-    public float maxHealth = 100f; // Maximum health of the kart
-    public float health = 100f; // Current health of the kart
+    public float maxHealth = 100f;
+    public float health = 100f;
 
     [Header("Friction")]
-    public float normalFriction = 4f; // Normal sideways grip
-    public float driftFriction = 1.5f; // Drift friction
+    public float normalFriction = 4f;
+    public float driftFriction = 1.5f;
 
     [Header("Drifting")]
-    public float driftTurnMultiplier = 1.35f; // Extra steering while drifting
-    public float driftSideGrip = 0.35f; // Allows more sideways sliding
+    public float driftTurnMultiplier = 1.35f;
+    public float driftSideGrip = 0.35f;
 
     private Rigidbody rb;
 
@@ -27,25 +28,33 @@ public class KartController : MonoBehaviour
 
     private bool isFrozen = false;
 
-    void Start()
+    private void Awake()
     {
+        // Find the Rigidbody on this kart.
         rb = GetComponent<Rigidbody>();
 
         if (rb == null)
         {
-            Debug.LogError("PlayerKart needs a Rigidbody!");
+            Debug.LogError("This kart needs a Rigidbody!");
             return;
         }
 
         rb.isKinematic = false;
         rb.useGravity = true;
 
-        // Stops the kart from tipping over
-        rb.constraints = RigidbodyConstraints.FreezeRotationX |
-                         RigidbodyConstraints.FreezeRotationZ;
+        // Stop the kart from tipping forwards or sideways.
+        rb.constraints =
+            RigidbodyConstraints.FreezeRotationX |
+            RigidbodyConstraints.FreezeRotationZ;
     }
 
-    void Update()
+    // Restore 60 health without exceeding maximum health.
+    public void RegenHealth()
+    {
+        health = Mathf.Min(health + 60f, maxHealth);
+    }
+
+    private void Update()
     {
         if (isFrozen)
         {
@@ -57,31 +66,29 @@ public class KartController : MonoBehaviour
         forwardInput = 0f;
         steeringInput = 0f;
 
-        // Reads WASD and arrow-key controls
+        // Read WASD and arrow-key controls.
         if (Keyboard.current != null)
         {
-            // Forward
+            // Forward.
             if (Keyboard.current.wKey.isPressed ||
                 Keyboard.current.upArrowKey.isPressed)
             {
                 forwardInput = 1f;
             }
-
-            // Reverse
+            // Reverse.
             else if (Keyboard.current.sKey.isPressed ||
                      Keyboard.current.downArrowKey.isPressed)
             {
                 forwardInput = -1f;
             }
 
-            // Left
+            // Turn left.
             if (Keyboard.current.aKey.isPressed ||
                 Keyboard.current.leftArrowKey.isPressed)
             {
                 steeringInput = -1f;
             }
-
-            // Right
+            // Turn right.
             else if (Keyboard.current.dKey.isPressed ||
                      Keyboard.current.rightArrowKey.isPressed)
             {
@@ -90,28 +97,28 @@ public class KartController : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         if (rb == null)
             return;
 
         if (isFrozen)
         {
+            // Keep the kart stopped while frozen.
             rb.linearVelocity = Vector3.zero;
             return;
         }
 
-
         MoveKart();
-        SidewaysMovement(); 
+        SidewaysMovement();
         ApplyFriction();
         SteerKart();
         LimitSpeed();
     }
 
-    void MoveKart()
+    private void MoveKart()
     {
-        // Moves the kart in the direction it is facing
+        // Apply force in the direction the kart faces.
         Vector3 force =
             transform.forward *
             forwardInput *
@@ -120,9 +127,9 @@ public class KartController : MonoBehaviour
         rb.AddForce(force, ForceMode.Acceleration);
     }
 
-    void SteerKart()
+    private void SteerKart()
     {
-        // Prevents steering while completely stopped
+        // Do not steer if the kart is almost stopped.
         if (rb.linearVelocity.magnitude < 0.1f)
             return;
 
@@ -133,7 +140,7 @@ public class KartController : MonoBehaviour
 
         float currentTurnSpeed = turnSpeed;
 
-        // Space activates drifting
+        // Space increases turning while drifting.
         if (Keyboard.current != null &&
             Keyboard.current.spaceKey.isPressed)
         {
@@ -146,21 +153,16 @@ public class KartController : MonoBehaviour
             speedFactor *
             Time.fixedDeltaTime;
 
-        // Turns the kart left or right
-        transform.Rotate(
-            0f,
-            turnAmount,
-            0f
-        );
+        transform.Rotate(0f, turnAmount, 0f);
     }
 
-    void ApplyFriction()
+    private void ApplyFriction()
     {
         bool drifting =
             Keyboard.current != null &&
             Keyboard.current.spaceKey.isPressed;
 
-        // Converts velocity into the kart's local space
+        // Convert the velocity into the kart's local direction.
         Vector3 localVelocity =
             transform.InverseTransformDirection(
                 rb.linearVelocity
@@ -169,31 +171,28 @@ public class KartController : MonoBehaviour
         float sideGrip =
             drifting ? driftSideGrip : normalFriction;
 
-        // Reduces sideways sliding
+        // Reduce sideways sliding.
         localVelocity.x *=
             Mathf.Clamp01(
-                1f -
-                (sideGrip * Time.fixedDeltaTime)
+                1f - (sideGrip * Time.fixedDeltaTime)
             );
 
-        // Converts velocity back to world space
+        // Convert the velocity back to world direction.
         rb.linearVelocity =
-            transform.TransformDirection(
-                localVelocity
-            );
+            transform.TransformDirection(localVelocity);
     }
 
-    void LimitSpeed()
+    private void LimitSpeed()
     {
-        // Prevents the kart from exceeding maximum speed
+        // Keep the kart below its maximum speed.
         if (rb.linearVelocity.magnitude > maxSpeed)
         {
             rb.linearVelocity =
-                rb.linearVelocity.normalized *
-                maxSpeed;
+                rb.linearVelocity.normalized * maxSpeed;
         }
     }
-    void SidewaysMovement()
+
+    private void SidewaysMovement()
     {
         if (steeringInput == 0f)
             return;
@@ -206,19 +205,12 @@ public class KartController : MonoBehaviour
         rb.AddForce(sidewaysForce, ForceMode.Acceleration);
     }
 
+    // Called by the freeze power-up.
     public void SetFrozen(bool frozen)
     {
         isFrozen = frozen;
 
-        // Immediately stop the kart when frozen
-        if (frozen && rb != null)
-        {
+        if (isFrozen && rb != null)
             rb.linearVelocity = Vector3.zero;
-        }
-    }
-
-    public void RegenHealth()
-    {
-        health = Mathf.Min(health + 60f, maxHealth);
     }
 }

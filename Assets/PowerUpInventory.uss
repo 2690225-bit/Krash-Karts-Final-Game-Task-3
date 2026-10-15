@@ -1,0 +1,48 @@
+
+/* Normal inventory slots */
+.inventory-slot {
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+
+    border-top-color: rgb(36, 71, 121);
+    border-bottom-color: rgb(36, 71, 121);
+    border-left-color: rgb(36, 71, 121);
+    border-right-color: rgb(36, 71, 121);
+}
+
+/* Highlight the currently selected slot */
+.inventory-slot.selected-slot {
+    border-top-width: 4px;
+    border-bottom-width: 4px;
+    border-left-width: 4px;
+    border-right-width: 4px;
+
+    border-top-color: rgb(22, 139, 255);
+    border-bottom-color: rgb(22, 139, 255);
+    border-left-color: rgb(22, 139, 255);
+    border-right-color: rgb(22, 139, 255);
+}
+
+/* Normal power-up icons */
+.power-up-icon {
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* Empty small and large icons */
+.power-up-icon.empty-power-up,
+.selected-power-up-icon.empty-power-up {
+    background-color: rgb(50, 65, 85);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* Background circle behind the large selected icon */
+.selected-icon-circle {
+    background-color: rgb(31, 59, 109);
+}
+
+/* Large selected power-up icon */
+.selected-power-up-icon {
+    -unity-background-scale-mode: scale-to-fit;
+}
