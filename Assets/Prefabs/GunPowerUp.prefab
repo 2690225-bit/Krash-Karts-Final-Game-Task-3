@@ -160,6 +160,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8259481430804628814, guid: 1008d6e150ca34007883094f1b6c84a4, type: 3}
+      propertyPath: definition
+      value: 
+      objectReference: {fileID: 11400000, guid: c90006e74c3cb47aba8271e2d49df530, type: 2}
     - target: {fileID: 9212310521939935992, guid: 1008d6e150ca34007883094f1b6c84a4, type: 3}
       propertyPath: m_Name
       value: GunPowerUp

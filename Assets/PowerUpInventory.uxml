@@ -1,0 +1,38 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/PowerUpInventory.uss?fileID=7433441132597879392&amp;guid=131d1f7017ef541cb81e0cf77ef25e95&amp;type=3#PowerUpInventory"/>
+    <ui:VisualElement name="InventoryContainer" style="flex-grow: 1; width: 100%; height: 180px; position: absolute; bottom: 24px; flex-direction: row; align-items: center; left: 0; right: 0; justify-content: center;">
+        <ui:VisualElement name="SlotsContainer" style="flex-grow: 0; flex-direction: row; align-items: center; justify-content: center;">
+            <ui:VisualElement name="Slot1" class="inventory-slot" style="flex-grow: 1; width: 120px; height: 120px; background-color: rgb(15, 39, 71); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; margin-right: 8px; align-items: center; justify-content: space-around; border-left-color: rgb(36, 71, 121); border-right-color: rgb(36, 71, 121); border-top-color: rgb(36, 71, 121); border-bottom-color: rgb(36, 71, 121); flex-shrink: 0;">
+                <ui:Label text="1" name="SlotNumber1"/>
+                <ui:VisualElement name="IconCircle1" style="flex-grow: 1; width: 70px; height: 70px; border-top-left-radius: 35px; border-top-right-radius: 35px; border-bottom-right-radius: 35px; border-bottom-left-radius: 35px; background-color: rgb(31, 59, 109); flex-direction: row; align-items: center; justify-content: center;">
+                    <ui:VisualElement name="PowerUpIcon1" class="power-up-icon" style="flex-grow: 1; width: 45px; height: 45px; border-top-left-radius: 23px; border-top-right-radius: 23px; border-bottom-right-radius: 23px; border-bottom-left-radius: 23px; background-color: rgb(255, 90, 90);"/>
+                </ui:VisualElement>
+                <ui:Label text="EMPTY" name="SlotName1" class="slot-name"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Slot2" class="inventory-slot" style="flex-grow: 1; border-top-width: 4px; border-right-width: 4px; border-bottom-width: 4px; border-left-width: 4px; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; background-color: rgb(15, 39, 71); width: 120px; height: 120px; border-left-color: rgb(22, 139, 255); border-right-color: rgb(22, 139, 255); border-top-color: rgb(22, 139, 255); border-bottom-color: rgb(22, 139, 255); margin-right: 8px; align-items: center; justify-content: space-around; flex-shrink: 0;">
+                <ui:Label text="2" name="SlotNumber2" style="border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-left-color: rgb(36, 71, 121); border-right-color: rgb(36, 71, 121); border-top-color: rgb(36, 71, 121); border-bottom-color: rgb(36, 71, 121);"/>
+                <ui:VisualElement name="IconCircle2" style="flex-grow: 1; width: 70px; height: 70px; border-top-left-radius: 35px; border-top-right-radius: 35px; border-bottom-right-radius: 35px; border-bottom-left-radius: 35px; border-left-color: rgb(31, 59, 109); border-right-color: rgb(31, 59, 109); border-top-color: rgb(31, 59, 109); border-bottom-color: rgb(31, 59, 109); align-items: center; justify-content: center; flex-direction: row;">
+                    <ui:VisualElement name="PowerUpIcon2" class="power-up-icon" style="flex-grow: 1; width: 45px; height: 45px; border-top-left-radius: 23px; border-top-right-radius: 23px; border-bottom-right-radius: 23px; border-bottom-left-radius: 23px; background-color: rgb(56, 168, 255);"/>
+                </ui:VisualElement>
+                <ui:Label text="EMPTY" name="SlotName2" class="slot-name"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Slot3" class="inventory-slot" style="flex-grow: 1; width: 120px; height: 120px; background-color: rgb(15, 39, 71); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-left-color: rgb(36, 71, 121); border-right-color: rgb(36, 71, 121); border-top-color: rgb(36, 71, 121); border-bottom-color: rgb(36, 71, 121); margin-right: 8px; align-items: center; justify-content: space-around; flex-shrink: 0;">
+                <ui:Label text="3" name="SlotNumber3"/>
+                <ui:VisualElement name="IconCircle3" style="flex-grow: 1; width: 70px; height: 70px; border-top-left-radius: 35px; border-top-right-radius: 35px; border-bottom-right-radius: 35px; border-bottom-left-radius: 35px; border-left-color: rgb(31, 59, 109); border-right-color: rgb(31, 59, 109); border-top-color: rgb(31, 59, 109); border-bottom-color: rgb(31, 59, 109); align-items: center; justify-content: center; flex-direction: row;">
+                    <ui:VisualElement name="PowerUpIcon3" class="power-up-icon" style="flex-grow: 1; width: 45px; height: 45px; border-top-left-radius: 23px; border-top-right-radius: 23px; border-bottom-right-radius: 23px; border-bottom-left-radius: 23px; background-color: rgb(255, 211, 77);">
+                        <ui:Label text="EMPTY" name="SlotName3" class="slot-name"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="SelectedPowerUpPanel" style="flex-grow: 1; width: 350px; height: 150px; margin-left: 12px; padding-left: 16px; padding-right: 16px; padding-top: 12px; padding-bottom: 12px; flex-direction: row; align-items: center; background-color: rgb(8, 26, 46); border-top-width: 3px; border-right-width: 3px; border-bottom-width: 3px; border-left-width: 3px; border-top-left-radius: 18px; border-top-right-radius: 18px; border-bottom-right-radius: 18px; border-bottom-left-radius: 18px; border-left-color: rgb(22, 77, 145); border-right-color: rgb(22, 77, 145); border-top-color: rgb(22, 77, 145); border-bottom-color: rgb(22, 77, 145); flex-shrink: 0;">
+            <ui:VisualElement name="SelectedIconCircle" class="selected-icon-circle" style="flex-grow: 1; width: 90px; height: 90px; border-top-left-radius: 45px; border-top-right-radius: 45px; border-bottom-right-radius: 45px; border-bottom-left-radius: 45px; background-color: rgb(31, 59, 109); flex-shrink: 0; align-items: center; justify-content: center;">
+                <ui:VisualElement name="SelectedIcon" class="selected-power-up-icon" style="flex-grow: 1; width: 60px; height: 60px; border-top-left-radius: 30px; border-top-right-radius: 30px; border-bottom-right-radius: 30px; border-bottom-left-radius: 30px; background-color: rgb(56, 168, 255);"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="SelectedTextContainer" style="flex-grow: 1; margin-left: 16px;">
+            <ui:Label text="FREEZE&#10;" name="SelectedName" style="font-size: 28px; color: rgb(56, 168, 255);"/>
+            <ui:Label text="Freezes the other karts for 3 seconds" name="SelectedDescription" style="font-size: 16px; color: rgb(255, 255, 255); white-space: pre-wrap;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
