@@ -56,12 +56,12 @@ public class PowerUpManager : MonoBehaviour
         if (!col.CompareTag("PickUp"))
             return;
 
-        PowerupProperties pickup = col.GetComponent<PowerupProperties>();
+        PowerUpProperties pickup = col.GetComponent<PowerUpProperties>();
 
         if (pickup == null)
         {
             Debug.LogError(
-                "PickUp object " + col.gameObject.name + " is missing PowerupProperties!"
+                "PickUp object " + col.gameObject.name + " is missing PowerUpProperties component!"
             );
             return;
         }
@@ -69,45 +69,52 @@ public class PowerUpManager : MonoBehaviour
         // Gets the power-up type.
         string activeType = pickup.type.ToLower();
 
-        // Random power-ups
+        // Pass the collected power-up directly into the activation loop
+        ActivatePowerUp(activeType);
+
+        // Disables the pickup item box after collection.
+        col.gameObject.SetActive(false);
+    }
+
+    public void UsePowerUp(string typeName)
+    {
+        if (string.IsNullOrEmpty(typeName)) return;
+        ActivatePowerUp(typeName.ToLower());
+    }
+
+    private void ActivatePowerUp(string activeType)
+    {
+        // Random power-ups selection handling
         if (activeType == "random")
         {
             int roll = Random.Range(0, 5);
-
-            if (roll == 0)
-                activeType = "speed";
-            else if (roll == 1)
-                activeType = "freeze";
-            else if (roll == 2)
-                activeType = "gun";
-            else if (roll == 3)
-                activeType = "missile";
-            else
-                activeType = "regeneration";
+            if (roll == 0) activeType = "speed";
+            else if (roll == 1) activeType = "freeze";
+            else if (roll == 2) activeType = "gun";
+            else if (roll == 3) activeType = "missile";
+            else activeType = "regeneration";
         }
 
-        // SPEED
+        // SPEED POWER UP
         if (activeType == "speed" && !speedPowerUpActive)
         {
-            if (kart == null)
-                return;
+            if (kart == null) return;
 
             kart.maxSpeed += 10f;
             kart.acceleration += 10f;
 
             speedPowerUpActive = true;
             speedPowerUpTimer = 8f;
+            Debug.Log("Speed boost activated!");
         }
 
-        // FREEZE
+        // FREEZE POWER UP
         else if (activeType == "freeze" && !freezePowerUpActive)
         {
-            if (kart == null)
-                return;
+            if (kart == null) return;
 
             KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
-            // Freezes every other kart.
             foreach (KartController otherKart in allKarts)
             {
                 if (otherKart != kart)
@@ -118,35 +125,33 @@ public class PowerUpManager : MonoBehaviour
 
             freezePowerUpActive = true;
             freezePowerUpTimer = 3f;
+            Debug.Log("All rival karts frozen!");
         }
 
-        // GUN
+        // GUN POWER UP
         else if (activeType == "gun" && !gunPowerUpActive)
         {
             gunPowerUpActive = true;
             gunPowerUpTimer = 5f;
+            Debug.Log("Gun weapons system online!");
         }
 
-        // MISSILE
+        // MISSILE POWER UP
         else if (activeType == "missile" && !missilePowerUpActive)
         {
             missilePowerUpActive = true;
-
             missilePowerUpTimer = 5f;
+            Debug.Log("Tracking missile loaded!");
         }
 
-        // REGENERATION
+        // REGENERATION POWER UP
         else if (activeType == "regeneration" && !regenerationPowerUpActive)
         {
-            if (kart == null)
-                return;
+            if (kart == null) return;
 
-            regenerationPowerUpActive = true;
             kart.RegenHealth();
+            Debug.Log("Health regenerated!");
         }
-
-        // Disables the pickup after collection.
-        col.gameObject.SetActive(false);
     }
 
     void Update()
@@ -163,7 +168,6 @@ public class PowerUpManager : MonoBehaviour
                     kart.maxSpeed -= 10f;
                     kart.acceleration -= 10f;
                 }
-
                 speedPowerUpActive = false;
             }
         }
@@ -177,7 +181,6 @@ public class PowerUpManager : MonoBehaviour
             {
                 KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
-                // Unfreeze every other kart.
                 foreach (KartController otherKart in allKarts)
                 {
                     if (otherKart != kart)
@@ -185,7 +188,6 @@ public class PowerUpManager : MonoBehaviour
                         otherKart.SetFrozen(false);
                     }
                 }
-
                 freezePowerUpActive = false;
             }
         }
