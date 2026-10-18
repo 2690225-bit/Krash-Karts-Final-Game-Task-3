@@ -1,4 +1,6 @@
 using UnityEngine;
+[System.Serializable]
+public class PowerUpDefinitionFallback { public string powerUpName; public string type; }
 
 public class PowerUpManager : MonoBehaviour
 {
@@ -66,14 +68,48 @@ public class PowerUpManager : MonoBehaviour
             return;
         }
 
-        // Gets the power-up type.
-        string activeType = pickup.type.ToLower();
+        string activeType = "";
 
-        // Pass the collected power-up directly into the activation loop
-        ActivatePowerUp(activeType);
+        var pickupTypeField = pickup.GetType().GetField("Type") ?? pickup.GetType().GetField("type") ?? pickup.GetType().GetField("powerUpType");
+        var pickupPropertyField = pickup.GetType().GetProperty("Type") ?? pickup.GetType().GetProperty("type") ?? pickup.GetType().GetProperty("powerUpType");
+
+        if (pickupTypeField != null)
+        {
+            activeType = pickupTypeField.GetValue(pickup)?.ToString();
+        }
+        else if (pickupPropertyField != null)
+        {
+            activeType = pickupPropertyField.GetValue(pickup, null)?.ToString();
+        }
+
+        if (string.IsNullOrEmpty(activeType))
+        {
+            Debug.LogError("PowerUpManager: Could not find a 'Type' variable inside your teammate's PowerUpProperties script!");
+            return;
+        }
+
+        // Passes the collected power-up directly into the activation loop
+        ActivatePowerUp(activeType.ToLower());
 
         // Disables the pickup item box after collection.
         col.gameObject.SetActive(false);
+    }
+
+    public void UsePowerUp(PowerUpDefinition itemDefinition)
+    {
+        if (itemDefinition == null) return;
+
+        string typeName = "";
+        var nameField = itemDefinition.GetType().GetField("powerUpName") ?? itemDefinition.GetType().GetField("typeName") ?? itemDefinition.GetType().GetField("type");
+        var nameProperty = itemDefinition.GetType().GetProperty("powerUpName") ?? itemDefinition.GetType().GetProperty("typeName") ?? itemDefinition.GetType().GetProperty("type");
+
+        if (nameField != null) typeName = nameField.GetValue(itemDefinition)?.ToString();
+        else if (nameProperty != null) typeName = nameProperty.GetValue(itemDefinition, null)?.ToString();
+
+        if (!string.IsNullOrEmpty(typeName))
+        {
+            ActivatePowerUp(typeName.ToLower());
+        }
     }
 
     public void UsePowerUp(string typeName)
