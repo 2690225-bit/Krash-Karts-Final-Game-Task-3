@@ -1,153 +1,156 @@
-
 using UnityEngine;
+[System.Serializable]
+public class PowerUpDefinitionFallback { public string powerUpName; public string type; }
 
 public class PowerUpManager : MonoBehaviour
 {
-    private KartController playerKart;
     private bool speedPowerUpActive = false;
     private bool freezePowerUpActive = false;
     private bool gunPowerUpActive = false;
     private bool missilePowerUpActive = false;
     private bool regenerationPowerUpActive = false;
 
-    private float speedTimer;
-    private float freezeTimer;
-    private float gunTimer;
-    private float missileTimer;
+    private float speedPowerUpTimer = 0f;
+    private float freezePowerUpTimer = 0f;
+    private float gunPowerUpTimer = 0f;
+    private float missilePowerUpTimer = 0f;
 
-    private bool speedActive;
-    private bool freezeActive;
-    private bool gunActive;
-    private bool missileActive;
-
-    private float originalMaxSpeed;
-    private float originalAcceleration;
-
-    private KartController[] frozenKarts;
     [Header("Camera Configuration")]
     public Camera playerCamera;
 
-    private KartController kart;
+    [Header("Player Tracking")]
+    [Tooltip("You can leave this blank! It will automatically look for the KartController in your scene.")]
+    public KartController kart;
 
     // These allow future gun/missile scripts to check
     // whether this kart currently has those power-ups.
     public bool HasGunPowerUp => gunPowerUpActive;
     public bool HasMissilePowerUp => missilePowerUpActive;
 
-    private void Awake()
+    void Start()
     {
-        kart = GetComponent<KartController>();
+        if (kart == null)
+        {
+            kart = GetComponent<KartController>();
+        }
+
+        if (kart == null)
+        {
+            kart = Object.FindFirstObjectByType<KartController>();
+        }
 
         if (kart == null)
         {
             Debug.LogError(
-                "PowerUpManager needs a KartController on " +
-                gameObject.name
+                "PowerUpManager: Could not locate a KartController component on " +
+                gameObject.name + " or anywhere else inside the open SceneHierarchy layout!"
             );
+        }
+        else
+        {
+            Debug.Log("PowerUpManager: Successfully locked onto target Kart: " + kart.gameObject.name);
         }
     }
 
-    private void Update()
+    void OnTriggerEnter(Collider col)
     {
-        // End the speed boost when its timer runs out.
-        if (speedActive)
-        {
-            speedTimer -= Time.deltaTime;
-
-            if (speedTimer <= 0f)
-            {
-                if (playerKart != null)
-                {
-                    playerKart.maxSpeed = originalMaxSpeed;
-                    playerKart.acceleration = originalAcceleration;
-                }
-
-                speedActive = false;
-            }
-        }
-
-        // Unfreeze other karts when the timer runs out.
-        if (freezeActive)
-        {
-            freezeTimer -= Time.deltaTime;
-
-            if (freezeTimer <= 0f)
-            {
-                if (frozenKarts != null)
-                {
-                    foreach (KartController kart in frozenKarts)
-                    {
-                        if (kart != null && kart != playerKart)
-                            kart.SetFrozen(false);
-                    }
         // Only reacts to power-up objects.
         if (!col.CompareTag("PickUp"))
             return;
 
-        PowerupProperties pickup =
-            col.GetComponent<PowerupProperties>();
+        PowerUpProperties pickup = col.GetComponent<PowerUpProperties>();
 
         if (pickup == null)
         {
             Debug.LogError(
-                "PickUp object " +
-                col.gameObject.name +
-                " is missing PowerupProperties!"
+                "PickUp object " + col.gameObject.name + " is missing PowerUpProperties component!"
             );
-
             return;
         }
 
-        // Gets the power-up type.
-        string activeType = pickup.type.ToLower();
+        string activeType = "";
 
-        // Random power-ups
+        var pickupTypeField = pickup.GetType().GetField("Type") ?? pickup.GetType().GetField("type") ?? pickup.GetType().GetField("powerUpType");
+        var pickupPropertyField = pickup.GetType().GetProperty("Type") ?? pickup.GetType().GetProperty("type") ?? pickup.GetType().GetProperty("powerUpType");
+
+        if (pickupTypeField != null)
+        {
+            activeType = pickupTypeField.GetValue(pickup)?.ToString();
+        }
+        else if (pickupPropertyField != null)
+        {
+            activeType = pickupPropertyField.GetValue(pickup, null)?.ToString();
+        }
+
+        if (string.IsNullOrEmpty(activeType))
+        {
+            Debug.LogError("PowerUpManager: Could not find a 'Type' variable inside your teammate's PowerUpProperties script!");
+            return;
+        }
+
+        // Passes the collected power-up directly into the activation loop
+        ActivatePowerUp(activeType.ToLower());
+
+        // Disables the pickup item box after collection.
+        col.gameObject.SetActive(false);
+    }
+
+    public void UsePowerUp(PowerUpDefinition itemDefinition)
+    {
+        if (itemDefinition == null) return;
+
+        string typeName = "";
+        var nameField = itemDefinition.GetType().GetField("powerUpName") ?? itemDefinition.GetType().GetField("typeName") ?? itemDefinition.GetType().GetField("type");
+        var nameProperty = itemDefinition.GetType().GetProperty("powerUpName") ?? itemDefinition.GetType().GetProperty("typeName") ?? itemDefinition.GetType().GetProperty("type");
+
+        if (nameField != null) typeName = nameField.GetValue(itemDefinition)?.ToString();
+        else if (nameProperty != null) typeName = nameProperty.GetValue(itemDefinition, null)?.ToString();
+
+        if (!string.IsNullOrEmpty(typeName))
+        {
+            ActivatePowerUp(typeName.ToLower());
+        }
+    }
+
+    public void UsePowerUp(string typeName)
+    {
+        if (string.IsNullOrEmpty(typeName)) return;
+        ActivatePowerUp(typeName.ToLower());
+    }
+
+    private void ActivatePowerUp(string activeType)
+    {
+        // Random power-ups selection handling
         if (activeType == "random")
         {
             int roll = Random.Range(0, 5);
-
-            if (roll == 0)
-                activeType = "speed";
-            else if (roll == 1)
-                activeType = "freeze";
-            else if (roll == 2)
-                activeType = "gun";
-            else if (roll == 3)
-                activeType = "missile";
-            else
-                activeType = "regeneration";
+            if (roll == 0) activeType = "speed";
+            else if (roll == 1) activeType = "freeze";
+            else if (roll == 2) activeType = "gun";
+            else if (roll == 3) activeType = "missile";
+            else activeType = "regeneration";
         }
 
-        // SPEED
-
-        if (activeType == "speed" &&
-            !speedPowerUpActive)
+        // SPEED POWER UP
+        if (activeType == "speed" && !speedPowerUpActive)
         {
-            if (kart == null)
-                return;
+            if (kart == null) return;
 
             kart.maxSpeed += 10f;
             kart.acceleration += 10f;
 
             speedPowerUpActive = true;
-
             speedPowerUpTimer = 8f;
+            Debug.Log("Speed boost activated!");
         }
 
-        // FREEZE
-
-        else if (activeType == "freeze" &&
-                 !freezePowerUpActive)
+        // FREEZE POWER UP
+        else if (activeType == "freeze" && !freezePowerUpActive)
         {
-            if (kart == null)
-                return;
+            if (kart == null) return;
 
-            KartController[] allKarts =
-                FindObjectsByType<KartController>(
-                    FindObjectsSortMode.None
-                );
+            KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
-            // Freezes every other kart.
             foreach (KartController otherKart in allKarts)
             {
                 if (otherKart != kart)
@@ -156,140 +159,40 @@ public class PowerUpManager : MonoBehaviour
                 }
             }
 
-                freezeActive = false;
-            }
-        }
-
-        // End the gun timer.
-        if (gunActive)
-        {
-            gunTimer -= Time.deltaTime;
-
-            if (gunTimer <= 0f)
-                gunActive = false;
-        }
-
-        // End the missile timer.
-        if (missileActive)
-        {
-            missileTimer -= Time.deltaTime;
-
-            if (missileTimer <= 0f)
-                missileActive = false;
-        }
-    }
-
-    // Accepts the power-up asset instead of a string.
-    public bool UsePowerUp(PowerUpDefinition definition)
-    {
-        if (playerKart == null)
-        {
-            Debug.LogError(
-                "PowerUpManager needs a KartController on the same GameObject!"
-            );
-
-            return false;
-        }
-
-        if (definition == null)
-            return false;
-
-        // Read the power-up ID from its asset.
-        string type = definition.id.ToLowerInvariant();
-
-        switch (type)
-        {
-            case "speed":
-                ActivateSpeed(definition);
-                return true;
-
-            case "freeze":
-                ActivateFreeze(definition);
-                return true;
-
-            case "gun":
-                gunActive = true;
-                gunTimer = definition.duration;
-
-                Debug.Log("Gun power-up activated.");
-                return true;
-
-            case "missile":
-                missileActive = true;
-                missileTimer = definition.duration;
-
-                Debug.Log("Missile power-up activated.");
-                return true;
-
-            case "regeneration":
-                playerKart.RegenHealth();
-                return true;
-
-            default:
-                Debug.LogWarning("Unknown power-up ID: " + type);
-                return false;
             freezePowerUpActive = true;
-
             freezePowerUpTimer = 3f;
+            Debug.Log("All rival karts frozen!");
         }
 
-        // GUN
-
-        else if (activeType == "gun" &&
-                 !gunPowerUpActive)
+        // GUN POWER UP
+        else if (activeType == "gun" && !gunPowerUpActive)
         {
             gunPowerUpActive = true;
-
             gunPowerUpTimer = 5f;
+            Debug.Log("Gun weapons system online!");
         }
 
-        // MISSILE
-
-        else if (activeType == "missile" &&
-                 !missilePowerUpActive)
+        // MISSILE POWER UP
+        else if (activeType == "missile" && !missilePowerUpActive)
         {
             missilePowerUpActive = true;
-
-            // Keep your friend's 5 second duration.
             missilePowerUpTimer = 5f;
+            Debug.Log("Tracking missile loaded!");
         }
 
-        // REGENERATION
-
-        else if (activeType == "regeneration" &&
-                 !regenerationPowerUpActive)
+        // REGENERATION POWER UP
+        else if (activeType == "regeneration" && !regenerationPowerUpActive)
         {
-            if (kart == null)
-                return;
-
-            regenerationPowerUpActive = true;
+            if (kart == null) return;
 
             kart.RegenHealth();
+            Debug.Log("Health regenerated!");
         }
-
-        // Disables the pickup after collection.
-        // This prevents the same kart from repeatedly
-        // triggering the same pickup while sitting inside it.
-        col.gameObject.SetActive(false);
     }
 
-    private void ActivateSpeed(PowerUpDefinition definition)
+    void Update()
     {
-        // Save the original stats only when the boost first starts.
-        if (!speedActive)
-        {
-            originalMaxSpeed = playerKart.maxSpeed;
-            originalAcceleration = playerKart.acceleration;
-        }
-
-        // Apply the configured bonuses without stacking them.
-        playerKart.maxSpeed =
-            originalMaxSpeed + definition.speedBonus;
-
-        playerKart.acceleration =
-            originalAcceleration + definition.accelerationBonus;
         // SPEED TIMER
-
         if (speedPowerUpActive)
         {
             speedPowerUpTimer -= Time.deltaTime;
@@ -301,25 +204,19 @@ public class PowerUpManager : MonoBehaviour
                     kart.maxSpeed -= 10f;
                     kart.acceleration -= 10f;
                 }
-
                 speedPowerUpActive = false;
             }
         }
 
         // FREEZE TIMER
-
         if (freezePowerUpActive)
         {
             freezePowerUpTimer -= Time.deltaTime;
 
             if (freezePowerUpTimer <= 0f)
             {
-                KartController[] allKarts =
-                    FindObjectsByType<KartController>(
-                        FindObjectsSortMode.None
-                    );
+                KartController[] allKarts = FindObjectsByType<KartController>(FindObjectsSortMode.None);
 
-                // Unfreeze every other kart.
                 foreach (KartController otherKart in allKarts)
                 {
                     if (otherKart != kart)
@@ -327,29 +224,11 @@ public class PowerUpManager : MonoBehaviour
                         otherKart.SetFrozen(false);
                     }
                 }
-
-        speedActive = true;
-        speedTimer = definition.duration;
-    }
-
-    private void ActivateFreeze(PowerUpDefinition definition)
-    {
-        // Find every kart in the scene.
-        frozenKarts = FindObjectsByType<KartController>(
-            FindObjectsSortMode.None
-        );
-
-        // Freeze every kart except the player using this power-up.
-        foreach (KartController kart in frozenKarts)
-        {
-            if (kart != null && kart != playerKart)
-                kart.SetFrozen(true);
+                freezePowerUpActive = false;
+            }
         }
 
-        freezeActive = true;
-        freezeTimer = definition.duration;
         // GUN TIMER
-
         if (gunPowerUpActive)
         {
             gunPowerUpTimer -= Time.deltaTime;
@@ -361,7 +240,6 @@ public class PowerUpManager : MonoBehaviour
         }
 
         // MISSILE TIMER
-
         if (missilePowerUpActive)
         {
             missilePowerUpTimer -= Time.deltaTime;
@@ -371,9 +249,5 @@ public class PowerUpManager : MonoBehaviour
                 missilePowerUpActive = false;
             }
         }
-
-        // REGENERATION
-        // Regeneration is currently instant,
-        // so there is no timer to process.
     }
 }
