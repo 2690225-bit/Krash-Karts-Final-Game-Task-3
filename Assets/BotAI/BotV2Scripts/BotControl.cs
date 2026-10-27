@@ -18,6 +18,11 @@ public class BotControl : MonoBehaviour
     //Current brake torque
     //current steering angle
     [HideInInspector] public GameObject botObject;
+    [HideInInspector] public Vector3 closestPosition;
+    [HideInInspector] public float facingToRoadTangentDot;
+    [HideInInspector] public float distanceTravelledThisFrame;
+
+    private Vector3 previousFramePosition;
 
     [SerializeField] public NeuralContainer botBrain;
     [SerializeField] public SplineContainer roadSpline;
@@ -36,6 +41,7 @@ public class BotControl : MonoBehaviour
     [SerializeField] Vector2 minMaxMotorTorque;
     [SerializeField] Vector2 minMaxBrakeTorque;
     [SerializeField] float maxSteeringAngle;
+    [SerializeField] float minimumHeight;
 
     [Header("Misc")]
     [SerializeField] int lookAheadPoints;
@@ -47,11 +53,27 @@ public class BotControl : MonoBehaviour
 
     List<float> inputs;
 
+    private void Start()
+    {
+        previousFramePosition = transform.position;
+    }
+
     public void Update()
     {
-        GetInputs();
+        //Completely disables the car if it falls off the track
+        if(transform.position.y < minimumHeight)
+        {
+            motorTorque = 0f;
+            brakeTorque = minMaxBrakeTorque.y;
+            steeringAngle = 0f;
+        }
+        else
+        {
+            GetInputs();
 
-        GetBrainOutput();
+            GetBrainOutput();
+        }
+
 
         foreach(WheelCollider wheel in drivingWheels)
         {
@@ -62,6 +84,10 @@ public class BotControl : MonoBehaviour
         {
             steeringWheel.steerAngle = steeringAngle;
         }
+
+        float d = Vector3.Distance(transform.position, previousFramePosition);
+        previousFramePosition = transform.position;
+        distanceTravelledThisFrame = d;
     }
 
     private void GetBrainOutput()
@@ -75,6 +101,8 @@ public class BotControl : MonoBehaviour
 
             return;
         }
+
+        Debug.Log(botBrain.MotorTorqueNetwork);
 
         motorTorque = Mathf.Clamp(botBrain.MotorTorqueNetwork.Calculate(inputs), minMaxMotorTorque.x, minMaxMotorTorque.y);
         brakeTorque = Mathf.Clamp(botBrain.BrakeTorqueNetwork.Calculate(inputs), minMaxBrakeTorque.x, minMaxMotorTorque.y);
@@ -112,6 +140,9 @@ public class BotControl : MonoBehaviour
         }
 
         inputs = new List<float>();
+
+        closestPosition = nearest;
+        facingToRoadTangentDot = lookAheadRelativeDirections[0];
 
         inputs.Add(centerOfRoadDist);
         inputs.Add(velocity);

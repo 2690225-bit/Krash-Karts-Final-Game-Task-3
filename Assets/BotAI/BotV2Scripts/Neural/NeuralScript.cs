@@ -2,11 +2,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 //Holds the generated code for the bot
+[System.Serializable]
 public class NeuralScript
 {
     float outputBias;
+    NeuralLayer inputLayer;
 
     List<NeuralLayer> layers;
+
+    public void SetupInputLayer(int numInputs)
+    {
+        List<NeuralNode> inputNodes = new List<NeuralNode>();
+
+        for(int i = 0; i < numInputs; i++)
+        {
+            inputNodes.Add(new NeuralNode(1f, 1f, 1f));
+        }
+
+        inputLayer = new NeuralLayer(inputNodes);
+    }
     
     //Creates a new network with x nodes per y layers
     public void InitializeNodes(int layerDepth, int nodeDepth)
@@ -36,12 +50,12 @@ public class NeuralScript
 
         //first layer acts as the inputs
         //
-        layers[0].SetNodeValues(inputs);
+        inputLayer.SetNodeValues(inputs);
 
-        for(int i = 1; i < layers.Count + 1; i++)
+        for(int i = 0; i < layers.Count + 1; i++)
         {
-            List<float> pWeights = layers[i-1].GetWeights();
-            List<float> pValues = layers[i-1].GetValues();
+            List<float> pWeights = (i>0)? layers[i-1].GetWeights() : inputLayer.GetWeights();
+            List<float> pValues = (i>0)? layers[i-1].GetValues() : inputLayer.GetValues();
 
             float previousLayerWeightedValue = 0f;
 
@@ -102,8 +116,24 @@ public class NeuralScript
             }
         }
     }
+
+    public int GetLayerCount()
+    {
+        return layers.Count;
+    }
+
+    public int GetFirstLayerNodeCount()
+    {
+        return layers[0].nodes.Count;
+    }
+
+    public int GetInputNodeCount()
+    {
+        return inputLayer.nodes.Count;
+    }
 }
 
+[System.Serializable]
 public class NeuralNode
 {
     public float value;
@@ -118,6 +148,7 @@ public class NeuralNode
     }
 }
 
+[System.Serializable]
 public class NeuralLayer
 {
     public List<NeuralNode> nodes;
@@ -167,7 +198,7 @@ public class NeuralLayer
     {
         if(newValues.Count != nodes.Count)
         {
-            Debug.LogWarning("Requested to change node values failed");
+            Debug.LogWarning($"Requested to change node values failed, Input {newValues.Count} is not equal to {nodes.Count}!");
             return;
         }
 
