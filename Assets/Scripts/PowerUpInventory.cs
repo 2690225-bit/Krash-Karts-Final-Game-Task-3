@@ -1,206 +1,87 @@
-
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+// The first power-up collected is always the first one used.
 public class PowerUpInventory : MonoBehaviour
 {
-    [Header("Inventory Settings")]
+    // Choose the activation key in the Inspector (for example E).
+    public Key useKey;
 
-    // Set the number of inventory slots in the Inspector.
-    [SerializeField, Min(1)]
-    private int slotCount = 3;
+    // Exactly three slots, as requested. Empty slots contain null.
+    private PowerUpDefinition[] slots = new PowerUpDefinition[3];
+    private PowerUpManager manager;
 
-    // Stores the power-ups currently held by the player.
-    private PowerUpDefinition[] powerUps;
-
-    // The selected slot: 0 = first, 1 = second, 2 = third.
-    public int selectedSlot = 0;
-
-    // Handles the effects of power-ups.
-    private PowerUpManager powerUpManager;
-
-    // Notifies the UI when the inventory changes.
-    public event Action OnInventoryChanged;
-
-    // Reports the actual number of inventory slots.
-    public int SlotCount =>
-        powerUps != null
-            ? powerUps.Length
-            : Mathf.Max(1, slotCount);
-
-    private void Awake()
+    private void Start()
     {
-        // Create the inventory using the chosen slot count.
-        powerUps = new PowerUpDefinition[
-            Mathf.Max(1, slotCount)
-        ];
-
-        // Find the PowerUpManager on the same GameObject.
-        powerUpManager = GetComponent<PowerUpManager>();
+        manager = GetComponent<PowerUpManager>();
     }
 
     private void Update()
     {
-        // Check that the keyboard is available.
         if (Keyboard.current == null)
         {
             return;
         }
 
-        // Select a slot using the number keys.
-        if (Keyboard.current.digit1Key.wasPressedThisFrame)
-        {
-            SelectSlot(0);
-        }
-
-        if (Keyboard.current.digit2Key.wasPressedThisFrame)
-        {
-            SelectSlot(1);
-        }
-
-        if (Keyboard.current.digit3Key.wasPressedThisFrame)
-        {
-            SelectSlot(2);
-        }
-
-        // Press E to use the selected power-up.
-        if (Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            UseSelectedPowerUp();
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        // Find the pickup script on the collider or its parent.
-        PowerUpProperties pickup =
-            other.GetComponentInParent<PowerUpProperties>();
-
-        if (pickup == null)
+        if (useKey == Key.None)
         {
             return;
         }
 
-        // Make sure the pickup or its parent has the PickUp tag.
-        if (!other.CompareTag("PickUp") &&
-            !pickup.CompareTag("PickUp"))
+        if (Keyboard.current[useKey].wasPressedThisFrame)
         {
-            return;
-        }
-
-        // Get the power-up's ScriptableObject asset.
-        PowerUpDefinition definition =
-            pickup.definition;
-
-        if (definition == null)
-        {
-            Debug.LogWarning(
-                "This pickup has no Power-Up Definition assigned!",
-                pickup.gameObject
-            );
-
-            return;
-        }
-
-        // Add the power-up if there is an empty slot.
-        if (AddPowerUp(definition))
-        {
-            // Hide the pickup after collecting it.
-            pickup.gameObject.SetActive(false);
+            UseFirst();
         }
     }
 
-    public PowerUpDefinition GetPowerUpAt(int slot)
+    // The UI reads slots 0, 1 and 2 using this method.
+    public PowerUpDefinition GetPowerUpAt(int number)
     {
-        // Prevent invalid slot numbers.
-        if (slot < 0 || slot >= powerUps.Length)
-        {
-            return null;
-        }
-
-        return powerUps[slot];
+        return slots[number];
     }
 
-    public void SelectSlot(int slot)
+    public bool TryAdd(PowerUpDefinition powerUp)
     {
-        // Ignore invalid slot numbers.
-        if (slot < 0 || slot >= powerUps.Length)
-        {
-            return;
-        }
-
-        // Remember which slot is selected.
-        selectedSlot = slot;
-
-        // Tell the UI to update its highlight and details.
-        OnInventoryChanged?.Invoke();
-    }
-
-    public bool AddPowerUp(PowerUpDefinition definition)
-    {
-        if (definition == null)
+        if (powerUp == null)
         {
             return false;
         }
 
         // Find the first empty slot.
-        for (int i = 0; i < powerUps.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
-            if (powerUps[i] == null)
+            if (slots[i] == null)
             {
-                powerUps[i] = definition;
-
-                // Tell the UI that a power-up was collected.
-                OnInventoryChanged?.Invoke();
-
+                slots[i] = powerUp;
                 return true;
             }
         }
 
-        // Do not collect the item if every slot is full.
-        Debug.Log("Power-up inventory is full!");
-
+        // All three slots are full.
         return false;
     }
 
-    public void UseSelectedPowerUp()
+    public void UseFirst()
     {
-        // Check that the selected slot is valid.
-        if (selectedSlot < 0 ||
-            selectedSlot >= powerUps.Length)
+        if (slots[0] == null)
         {
             return;
         }
 
-        // Get the power-up in the selected slot.
-        PowerUpDefinition definition =
-            powerUps[selectedSlot];
-
-        // Do nothing if the slot is empty.
-        if (definition == null)
+        if (manager == null)
         {
             return;
         }
 
-        // Make sure the player has a PowerUpManager.
-        if (powerUpManager == null)
+        // Do not remove the item if it could not be activated.
+        if (manager.UsePowerUp(slots[0]) == false)
         {
-            Debug.LogError(
-                "PowerUpManager is missing from the player!"
-            );
-
             return;
         }
 
-        // Activate the power-up.
-        // Remove it from inventory only if activation succeeds.
-        if (powerUpManager.UsePowerUp(definition))
-        {
-            powerUps[selectedSlot] = null;
-
-            // Tell the UI to show the now-empty slot.
-            OnInventoryChanged?.Invoke();
-        }
+        // Move the remaining power-ups one place to the left.
+        slots[0] = slots[1];
+        slots[1] = slots[2];
+        slots[2] = null;
     }
 }
