@@ -7,8 +7,30 @@ public class NeuralScript
 {
     float outputBias;
     NeuralLayer inputLayer;
-
     List<NeuralLayer> layers;
+
+    public List<NeuralLayer> GetNeuralValues(out NeuralLayer inputLayer, out float outputBias)
+    {
+        inputLayer = this.inputLayer;
+        outputBias = this.outputBias;
+
+        return layers;
+    }
+
+    public void SetInputLayer(NeuralLayer inputLayer)
+    {
+        this.inputLayer = inputLayer;
+    }
+
+    public void SetLayers(List<NeuralLayer> layers)
+    {
+        this.layers = layers;
+    }
+
+    public void SetOutputBias(float bias)
+    {
+        outputBias = bias;
+    }
 
     public void SetupInputLayer(int numInputs)
     {

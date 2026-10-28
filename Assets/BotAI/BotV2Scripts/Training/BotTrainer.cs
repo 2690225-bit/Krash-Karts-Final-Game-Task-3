@@ -14,12 +14,13 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] int amountToTrainPerGeneration;
     [SerializeField] float generationTrainingTime;
     [SerializeField] int inputCount = 10;
-    [SerializeField] float distanceTravelledBias;
-    [SerializeField] float facingDirectionBias;
-    [SerializeField] float minimumYPosition = -10f;
-    [SerializeField] int generationMaxValues = 500;
-    [SerializeField] float fallOffPenaltyFirstGen = 0;
-    [SerializeField] float fallOffPenaltyAfterSetGen = -9999f;
+    [SerializeField] float minimumYPosition = -0.25f;
+    [SerializeField] float pointsForBeingAboveExpectedVelocity;
+    [SerializeField] float penaltyForBeingBelowExpectedVelocity;
+    [SerializeField] float expectedVelocity = 10f;
+    [SerializeField, Range(-1f, 1f)] float forwardFacingScoreRigidity = 0.5f;
+    [SerializeField] float forwardFacingMultiplier;
+    [SerializeField] float speedMultiplier;
 
 
     [Header("Brain Settings")]
@@ -28,9 +29,6 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] int brainLayers;
     [SerializeField] int brainNodes;
     [SerializeField] string brainSavePath = "Assets/Saved_Brains/NewBrain.asset";
-
-    [Header("Testing")]
-    [SerializeField] NeuralContainer containerCheck = null;
 
     List<BotReference> bots;
 
@@ -46,6 +44,8 @@ public class BotTrainer : MonoBehaviour
     int generationNumber;
 
     float fallOffPenalty;
+
+    int botsDeactivated = 0;
 
     private void Start()
     {
@@ -82,53 +82,12 @@ public class BotTrainer : MonoBehaviour
         previousBestS = bots[0].steeringControl;
 
         RunGeneration();
-
-        if (containerCheck != null)
-        {
-            PerformContainerCheck(containerCheck);
-        }
-    }
-
-    private void PerformContainerCheck(NeuralContainer check)
-    {
-        var m = check.MotorTorqueNetwork;
-        var b = check.BrakeTorqueNetwork;
-        var s = check.SteeringAngleNetwork;
-
-        if(m != null)
-        {
-            Debug.Log($"Container contains Motor Torque Network: {m.GetLayerCount()} Layers, {m.GetFirstLayerNodeCount()} Nodes, {m.GetInputNodeCount()} Input Nodes");
-        }
-        else
-        {
-            Debug.Log("Container is missing Motor Torque Network");
-        }
-
-        if(b != null)
-        {
-            Debug.Log($"Container contains Brake Torque Network: {b.GetLayerCount()} Layers, {b.GetFirstLayerNodeCount()} Nodes, {b.GetInputNodeCount()} Input Nodes");
-        }
-        else
-        {
-            Debug.Log("Container is missing Brake Torque Network");
-        }
-
-        if(s != null)
-        {
-            Debug.Log($"Container contains Steering Angle Network: {s.GetLayerCount()} Layers, {s.GetFirstLayerNodeCount()} Nodes, {s.GetInputNodeCount()} Input Nodes");
-        }
-        else
-        {
-            Debug.Log("Container is missing Steering Angle Network");
-        }
     }
 
     //Final step to starting a generation, gives all bots a prefab to control
     private void RunGeneration()
     {
         generationNumber++;
-        //Makes the penalty for falling off less harsh in earlier generations
-        fallOffPenalty = Mathf.Lerp(fallOffPenaltyFirstGen, fallOffPenaltyAfterSetGen, Mathf.Clamp01((float)generationNumber / (float)generationMaxValues));
 
         for(int i = 0; i < bots.Count; i++)
         {
@@ -175,12 +134,33 @@ public class BotTrainer : MonoBehaviour
         {
             //Get dot between bot forward and road forward
 
+            if (bots[i].control.botObject.transform.position.y < minimumYPosition)
+            {
+                bots[i].control.botObject.gameObject.SetActive(false);
+                continue;
+
+                botsDeactivated++;
+
+                if(botsDeactivated >= bots.Count)
+                {
+                    timer_GenerationLifetime = generationTrainingTime;
+                }
+            }
+
+
+            if (bots[i].control.GetVelocity() >= expectedVelocity)
+            {
+                bots[i].score += pointsForBeingAboveExpectedVelocity * Time.deltaTime;
+            }
+            else
+            {
+                bots[i].score -= penaltyForBeingBelowExpectedVelocity * Time.deltaTime;
+            }
+
             float facing = bots[i].control.facingToRoadTangentDot * Time.deltaTime;
 
-            float distanceTravelled = bots[i].control.distanceTravelledThisFrame;
-
-            cumulativeDistanceTravelled[i] += distanceTravelled;
-            cumulativeFacingDirection[i] += facing;
+            bots[i].score += bots[i].control.GetVelocity() * speedMultiplier * Time.deltaTime;
+            bots[i].score += Mathf.Clamp(facing + forwardFacingScoreRigidity, -1f, 1f) * forwardFacingMultiplier * Time.deltaTime;
         }
     }
 
@@ -188,11 +168,7 @@ public class BotTrainer : MonoBehaviour
     private void InitializeNewGeneration()
     {
         //Check and sort points
-
-        for(int i = 0; i < bots.Count; i++)
-        {
-            bots[i].score = Mathf.Pow(cumulativeDistanceTravelled[i], distanceTravelledBias) * Mathf.Pow(cumulativeFacingDirection[i], facingDirectionBias) + ((bots[i].control.botObject.transform.position.y < minimumYPosition) ? fallOffPenalty : 0f);
-        }
+        botsDeactivated = 0;
 
         //Sorts the list in descending order
         bots.Sort((p1, p2) => p2.score.CompareTo(p1.score));
@@ -235,9 +211,7 @@ public class BotTrainer : MonoBehaviour
     {
         NeuralContainer saved = ScriptableObject.CreateInstance<NeuralContainer>();
 
-        saved.MotorTorqueNetwork = previousBestM;
-        saved.BrakeTorqueNetwork = previousBestB;
-        saved.SteeringAngleNetwork = previousBestS;
+        saved.Write(previousBestM, previousBestB, previousBestS);
 
         string path = brainSavePath;
 
@@ -249,8 +223,6 @@ public class BotTrainer : MonoBehaviour
         AssetDatabase.Refresh();
 
         Debug.Log($"Saved new brain as {path}");
-
-        PerformContainerCheck(saved);
     }
 
 

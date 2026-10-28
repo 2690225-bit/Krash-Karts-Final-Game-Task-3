@@ -56,6 +56,11 @@ public class BotControl : MonoBehaviour
     private void Start()
     {
         previousFramePosition = transform.position;
+
+        if(botBrain != null)
+        {
+            botBrain.Read(out motorControl, out brakeControl, out steeringControl);
+        }
     }
 
     public void Update()
@@ -92,21 +97,14 @@ public class BotControl : MonoBehaviour
 
     private void GetBrainOutput()
     {
-        //Only for training, stops the creation of hundreds of scriptable objects
-        if(botBrain == null)
-        {
-            motorTorque = Mathf.Clamp(motorControl.Calculate(inputs), minMaxMotorTorque.x, minMaxMotorTorque.y);
-            brakeTorque = Mathf.Clamp(brakeControl.Calculate(inputs), minMaxBrakeTorque.x, minMaxMotorTorque.y);
-            steeringAngle = Mathf.Clamp(steeringControl.Calculate(inputs), -steeringAngle, steeringAngle);
+        motorTorque = Mathf.Clamp(motorControl.Calculate(inputs), minMaxMotorTorque.x, minMaxMotorTorque.y);
+        brakeTorque = Mathf.Clamp(brakeControl.Calculate(inputs), minMaxBrakeTorque.x, minMaxMotorTorque.y);
+        steeringAngle = Mathf.Clamp(steeringControl.Calculate(inputs), -steeringAngle, steeringAngle);
+    }
 
-            return;
-        }
-
-        Debug.Log(botBrain.MotorTorqueNetwork);
-
-        motorTorque = Mathf.Clamp(botBrain.MotorTorqueNetwork.Calculate(inputs), minMaxMotorTorque.x, minMaxMotorTorque.y);
-        brakeTorque = Mathf.Clamp(botBrain.BrakeTorqueNetwork.Calculate(inputs), minMaxBrakeTorque.x, minMaxMotorTorque.y);
-        steeringAngle = Mathf.Clamp(botBrain.SteeringAngleNetwork.Calculate(inputs), -steeringAngle, steeringAngle);
+    public float GetVelocity()
+    {
+        return rb.linearVelocity.magnitude;
     }
 
     private void GetInputs()

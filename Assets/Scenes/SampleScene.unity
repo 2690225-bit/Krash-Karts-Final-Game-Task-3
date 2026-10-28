@@ -759,21 +759,21 @@ MonoBehaviour:
   botPrefab: {fileID: 7675563706666678885, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
   roadSpline: {fileID: 1256140687}
   generationCountText: {fileID: 787179259}
-  amountToTrainPerGeneration: 1000
-  generationTrainingTime: 15
-  inputCount: 10
-  distanceTravelledBias: 3
-  facingDirectionBias: 2
+  amountToTrainPerGeneration: 250
+  generationTrainingTime: 20
+  inputCount: 7
   minimumYPosition: -0.25
-  generationMaxValues: 250
-  fallOffPenaltyFirstGen: -10
-  fallOffPenaltyAfterSetGen: -100000
+  pointsForBeingAboveExpectedVelocity: 5
+  penaltyForBeingBelowExpectedVelocity: -2
+  expectedVelocity: 7
+  forwardFacingScoreRigidity: 0.6
+  forwardFacingMultiplier: 5
+  speedMultiplier: 3
   minMaxBeginningRandomValues: {x: -5, y: 5}
-  childrenRandomAdjustment: 0.05
-  brainLayers: 5
-  brainNodes: 7
+  childrenRandomAdjustment: 0.1
+  brainLayers: 4
+  brainNodes: 4
   brainSavePath: Assets/BotAI/SavedBrains/NewBrain.asset
-  containerCheck: {fileID: 0}
 --- !u!4 &903856552
 Transform:
   m_ObjectHideFlags: 0
@@ -2091,7 +2091,7 @@ PrefabInstance:
     - target: {fileID: 2818307286988549165, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: botBrain
       value: 
-      objectReference: {fileID: 11400000, guid: 3260f006e92546e48bc002b590c4a056, type: 2}
+      objectReference: {fileID: 11400000, guid: 1877c0ddbb2606b4c9d3283398d0906c, type: 2}
     - target: {fileID: 2818307286988549165, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: roadSpline
       value: 
