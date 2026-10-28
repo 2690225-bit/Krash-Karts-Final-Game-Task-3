@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,8 +7,7 @@ public class KartController : MonoBehaviour
     [Header("Movement")]
     public float acceleration = 20f;
     public float maxSpeed = 25f;
-    public float turnSpeed = 90f;
-    public float reverseSpeed = 10f;
+    public float turnSpeed = 65f;
 
     [Header("Health")]
     public float maxHealth = 100f;
@@ -21,35 +21,68 @@ public class KartController : MonoBehaviour
     public float driftTurnMultiplier = 1.35f;
     public float driftSideGrip = 0.35f;
 
-    private Rigidbody rb;
+    [Header("Passive Regeneration")]
+    public float regenDelay = 30f;
+    public float regenInterval = 3f;
+    public float regenAmount = 5f;
 
+    private Rigidbody rb;
+    private Transform kartBody;
     private float forwardInput;
     private float steeringInput;
+    private bool isFrozen = true;
+    private float nextHealTime;
+    private PowerUpManager powerUpManager;
 
-    private bool isFrozen = false;
-
-    void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody>();
 
         if (rb == null)
+            rb = GetComponentInParent<Rigidbody>();
+
+        if (rb == null)
+            rb = GetComponentInChildren<Rigidbody>(true);
+
+        if (rb == null)
         {
-            Debug.LogError("KartController needs a Rigidbody!");
+            Debug.LogError(
+                "KartController: Rigidbody missing from kart hierarchy.",
+                gameObject
+            );
+            enabled = false;
             return;
         }
 
-        rb.isKinematic = false;
-        rb.useGravity = true;
+        kartBody = rb.transform;
 
-        rb.constraints =
-            RigidbodyConstraints.FreezeRotationX |
-            RigidbodyConstraints.FreezeRotationZ;
+        // Do not change Rigidbody constraints or gravity here.
+        // This avoids changing the selection-panel kart physics.
+
+        powerUpManager = GetComponent<PowerUpManager>();
+
+        if (powerUpManager == null)
+            powerUpManager = GetComponentInParent<PowerUpManager>();
+
+        if (powerUpManager == null)
+            powerUpManager = GetComponentInChildren<PowerUpManager>(true);
     }
 
-    void Update()
+    private void Start()
+    {
+        health = Mathf.Clamp(health, 0f, maxHealth);
+        nextHealTime = Time.time + regenDelay;
+
+        Debug.Log("KartController ready. Waiting for race countdown.");
+    }
+
+    private void Update()
     {
         if (Keyboard.current == null)
+        {
+            Debug.LogWarning("NO KEYBOARD DETECTED");
             return;
+        }
 
         if (isFrozen)
         {
@@ -58,39 +91,27 @@ public class KartController : MonoBehaviour
             return;
         }
 
-        
-        // FORWARD / REVERSE
-             forwardInput = 0f;
+        forwardInput = 0f;
+        steeringInput = 0f;
 
         if (Keyboard.current.wKey.isPressed ||
             Keyboard.current.upArrowKey.isPressed)
-        {
             forwardInput = 1f;
-        }
         else if (Keyboard.current.sKey.isPressed ||
                  Keyboard.current.downArrowKey.isPressed)
-        {
             forwardInput = -1f;
-        }
-
-        // STEERING
-        steeringInput = 0f;
 
         if (Keyboard.current.aKey.isPressed ||
             Keyboard.current.leftArrowKey.isPressed)
-        {
             steeringInput = -1f;
-        }
         else if (Keyboard.current.dKey.isPressed ||
                  Keyboard.current.rightArrowKey.isPressed)
-        {
             steeringInput = 1f;
-        }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        if (rb == null)
+        if (rb == null || kartBody == null || rb.isKinematic)
             return;
 
         if (isFrozen)
@@ -100,110 +121,59 @@ public class KartController : MonoBehaviour
             return;
         }
 
-        MoveKart();
-        ApplyFriction();
-        SteerKart();
-        LimitSpeed();
-    }
-
-    void MoveKart()
-    {
-        float currentAcceleration = acceleration;
-
-        if (forwardInput < 0f)
-        {
-            currentAcceleration = reverseSpeed;
-        }
-
-        Vector3 force =
-            transform.forward *
-            forwardInput *
-            currentAcceleration;
-
-        rb.AddForce(force, ForceMode.Acceleration);
-    }
-
-    void SteerKart()
-    {
-        if (Mathf.Abs(steeringInput) < 0.01f)
-            return;
-
-        float speed = rb.linearVelocity.magnitude;
-
-        if (speed < 0.5f)
-            return;
-
-        float speedFactor =
-            Mathf.Clamp01(speed / maxSpeed);
-
-        float currentTurnSpeed = turnSpeed;
-
-        // Hold SPACE to drift
-        bool drifting =
-            Keyboard.current != null &&
-            Keyboard.current.spaceKey.isPressed;
-
-        if (drifting)
-        {
-            currentTurnSpeed *= driftTurnMultiplier;
-        }
-
-        float turnAmount =
-            steeringInput *
-            currentTurnSpeed *
-            speedFactor *
-            Time.fixedDeltaTime;
-
-        transform.Rotate(
-            0f,
-            turnAmount,
-            0f
+        // Accelerate and reverse.
+        rb.AddForce(
+            kartBody.forward * forwardInput * acceleration,
+            ForceMode.Acceleration
         );
-    }
 
-    void ApplyFriction()
-    {
-        bool drifting =
-            Keyboard.current != null &&
-            Keyboard.current.spaceKey.isPressed;
+        if (forwardInput != 0f)
+        {
+            Debug.Log(
+                "W INPUT DETECTED | Frozen: " + isFrozen +
+                " | Kinematic: " + rb.isKinematic +
+                " | Constraints: " + rb.constraints +
+                " | Velocity: " + rb.linearVelocity
+            );
+        }
 
+        // Reduce sideways sliding.
         Vector3 localVelocity =
-            transform.InverseTransformDirection(
-                rb.linearVelocity
-            );
+            kartBody.InverseTransformDirection(rb.linearVelocity);
 
-        float grip =
-            drifting
-                ? driftSideGrip
-                : normalFriction;
+        bool drifting = Keyboard.current != null &&
+                        Keyboard.current.spaceKey.isPressed;
 
-        // Reduce sideways sliding
-        localVelocity.x *=
-            Mathf.Clamp01(
-                1f -
-                grip * Time.fixedDeltaTime
-            );
+        float grip = drifting ? driftSideGrip : normalFriction;
+
+        localVelocity.x *= Mathf.Clamp01(
+            1f - grip * Time.fixedDeltaTime
+        );
 
         rb.linearVelocity =
-            transform.TransformDirection(
-                localVelocity
-            );
-    }
+            kartBody.TransformDirection(localVelocity);
 
-    void LimitSpeed()
-    {
-        float currentMaxSpeed = maxSpeed;
+        // Turn while moving.
+        float speed = rb.linearVelocity.magnitude;
 
-        if (forwardInput < 0f)
+        if (speed > 0.2f && steeringInput != 0f)
         {
-            currentMaxSpeed = reverseSpeed;
+            float speedFactor = Mathf.Clamp01(speed / maxSpeed);
+            float turnMultiplier =
+                drifting ? driftTurnMultiplier : 1f;
+
+            float turnAmount =
+                steeringInput * turnSpeed * speedFactor *
+                turnMultiplier * Time.fixedDeltaTime;
+
+            kartBody.Rotate(0f, turnAmount, 0f);
         }
 
-        if (rb.linearVelocity.magnitude > currentMaxSpeed)
+        // Limit maximum speed.
+        if (rb.linearVelocity.magnitude > maxSpeed)
         {
             rb.linearVelocity =
-                rb.linearVelocity.normalized *
-                currentMaxSpeed;
+                rb.linearVelocity.normalized * maxSpeed;
         }
     }
 
@@ -216,33 +186,74 @@ public class KartController : MonoBehaviour
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
-    }
 
-    public void SpawnAt(Transform spawnPoint)
-    {
-        if (spawnPoint == null)
-        {
-            Debug.LogError("Spawn point has not been assigned!");
-            return;
-        }
-
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
-
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        rb.position = spawnPoint.position;
-        rb.rotation = spawnPoint.rotation;
-
-        health = maxHealth;
+        Debug.Log("Kart controls frozen: " + isFrozen);
     }
 
     public void RegenHealth()
     {
-        health = Mathf.Min(
-            health + 60f,
-            maxHealth
-        );
+        health = Mathf.Min(health + 60f, maxHealth);
+    }
+
+    public void RegenHealth(float amount)
+    {
+        health = Mathf.Min(health + amount, maxHealth);
+    }
+
+    private void LateUpdate()
+    {
+        if (health >= maxHealth ||
+            regenAmount <= 0f ||
+            regenInterval <= 0f)
+            return;
+
+        if (Time.time >= nextHealTime)
+        {
+            RegenHealth(regenAmount);
+            nextHealTime = Time.time + regenInterval;
+        }
+    }
+
+    public void TakeDamage(float damage, KartController attacker)
+    {
+        if (damage <= 0f)
+            return;
+
+        if (powerUpManager != null &&
+            powerUpManager.IsShieldActive())
+            return;
+
+        if (powerUpManager != null &&
+            attacker != null &&
+            attacker != this)
+        {
+            float reflectedDamage =
+                damage * powerUpManager.GetReflectionFraction();
+
+            damage -= reflectedDamage;
+
+            if (reflectedDamage > 0f)
+                attacker.TakeReflectedDamage(reflectedDamage);
+        }
+
+        LoseHealth(damage);
+    }
+
+    public void TakeReflectedDamage(float damage)
+    {
+        if (powerUpManager != null &&
+            powerUpManager.IsShieldActive())
+            return;
+
+        LoseHealth(damage);
+    }
+
+    private void LoseHealth(float damage)
+    {
+        if (damage <= 0f)
+            return;
+
+        health = Mathf.Max(health - damage, 0f);
+        nextHealTime = Time.time + regenDelay;
     }
 }
