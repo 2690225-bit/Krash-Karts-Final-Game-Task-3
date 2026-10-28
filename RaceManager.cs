@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 public class RaceManager : MonoBehaviour
@@ -10,176 +11,154 @@ public class RaceManager : MonoBehaviour
 
     [Header("Race Settings")]
     public int totalLaps = 3;
+    public int totalCheckpoints = 4;
 
     [Header("Race UI")]
     public Countdown countdown;
     public LapCounterUI lapCounter;
     public RaceTimer raceTimer;
 
-    [Header("Checkpoint Settings")]
-    public int totalCheckpoints = 4;
-
-    [HideInInspector]
-    public bool raceFinished = false;
+    [HideInInspector] public bool raceFinished;
 
     private GameObject playerCar;
-
+    private KartController playerKart;
     private int currentCheckpoint = -1;
     private int currentLap = 1;
+    private bool raceStarted;
 
-    void Start()
+    private void Start()
     {
-        SpawnPlayer();
-
-        // Freeze the player before countdown
-        KartController kart =
-            playerCar.GetComponent<KartController>();
-
-        if (kart != null)
-        {
-            kart.SetFrozen(true);
-        }
-
-        // Set initial lap display
-        if (lapCounter != null)
-        {
-            lapCounter.SetLap(
-                currentLap,
-                totalLaps
-            );
-        }
-
-        // Start countdown
-        if (countdown != null)
-        {
-            countdown.raceManager = this;
-            countdown.StartCountdown();
-        }
-        else
-        {
-            Debug.LogError(
-                "Countdown is not assigned to RaceManager!"
-            );
-        }
-    }
-
-    void SpawnPlayer()
-    {
-        int selectedKart =
-            PlayerPrefs.GetInt("SelectedKart", 0);
-
-        if (carPrefabs == null ||
-            carPrefabs.Length == 0)
-        {
-            Debug.LogError(
-                "No car prefabs assigned to RaceManager!"
-            );
-            return;
-        }
+        Time.timeScale = 1f;
+        raceFinished = false;
+        raceStarted = false;
+        currentLap = 1;
+        currentCheckpoint = -1;
 
         if (playerSpawn == null)
         {
             Debug.LogError(
-                "PlayerSpawnPoint is not assigned!"
-            );
+                "RaceManager: Player Spawn is not assigned on this RaceManager.",
+                this);
             return;
         }
 
-        if (selectedKart < 0 ||
-            selectedKart >= carPrefabs.Length)
+        if (carPrefabs == null || carPrefabs.Length == 0)
         {
-            selectedKart = 0;
+            Debug.LogError("RaceManager: No car prefabs assigned.", this);
+            return;
         }
+
+        int selected = PlayerPrefs.GetInt("SelectedKart", 0);
+
+        if (selected < 0 || selected >= carPrefabs.Length ||
+            carPrefabs[selected] == null)
+        {
+            selected = -1;
+
+            for (int i = 0; i < carPrefabs.Length; i++)
+            {
+                if (carPrefabs[i] != null)
+                {
+                    selected = i;
+                    break;
+                }
+            }
+        }
+
+        if (selected == -1)
+        {
+            Debug.LogError("RaceManager: No valid kart prefab found.", this);
+            return;
+        }
+
+        GameObject prefab = carPrefabs[selected];
 
         playerCar = Instantiate(
-            carPrefabs[selectedKart],
-            playerSpawn.position,
-            playerSpawn.rotation
-        );
+            prefab, playerSpawn.position, playerSpawn.rotation);
 
-        Debug.Log(
-            "Player spawned: " +
-            playerCar.name
-        );
+        playerCar.name = prefab.name + "_Player";
 
-        // Make sure the spawned car is the Player
-        playerCar.tag = "Player";
+        playerKart = playerCar.GetComponentInChildren<KartController>(true);
 
-        // Camera
-        Camera mainCamera = Camera.main;
-
-        if (mainCamera != null)
-        {
-            CameraFollow cameraFollow =
-                mainCamera.GetComponent<CameraFollow>();
-
-            if (cameraFollow != null)
-            {
-                cameraFollow.target =
-                    playerCar.transform;
-            }
-            else
-            {
-                Debug.LogError(
-                    "CameraFollow is missing from Main Camera!"
-                );
-            }
-        }
-        else
+        if (playerKart == null)
         {
             Debug.LogError(
-                "No Main Camera found!"
-            );
+                "RaceManager: The spawned kart has no KartController.",
+                playerCar);
+            Destroy(playerCar);
+            playerCar = null;
+            return;
         }
-    }
 
-    public void StartRace()
-    {
-        Debug.Log("RACE STARTED!");
+        playerCar.tag = "Player";
+        playerKart.gameObject.tag = "Player";
+        playerKart.SetFrozen(true);
 
-        if (playerCar != null)
+        Camera cam = Camera.main;
+
+        if (cam != null)
         {
-            KartController kart =
-                playerCar.GetComponent<KartController>();
+            CameraFollow follow = cam.GetComponent<CameraFollow>();
 
-            if (kart != null)
-            {
-                kart.SetFrozen(false);
-            }
+            if (follow != null)
+                follow.target = playerCar.transform;
         }
+
+        if (lapCounter != null)
+            lapCounter.SetLap(currentLap, totalLaps);
 
         if (raceTimer != null)
+            raceTimer.ResetTimer();
+
+        if (countdown == null)
         {
-            raceTimer.StartTimer();
+            Debug.LogError("RaceManager: Countdown is not assigned.", this);
+            return;
         }
+
+        countdown.raceManager = this;
+        countdown.enabled = true;
+        countdown.gameObject.SetActive(true);
+        countdown.StartCountdown();
+
+        Debug.Log("RaceManager: Kart spawned and countdown requested.", this);
+    }
+
+    // Your Countdown script should call this when the countdown finishes.
+    public void StartRace()
+    {
+        if (raceStarted || raceFinished || playerKart == null)
+        {
+            Debug.LogWarning(
+                "RaceManager: Cannot start; kart missing or race already started.",
+                this);
+            return;
+        }
+
+        raceStarted = true;
+        playerKart.SetFrozen(false);
+
+        if (raceTimer != null)
+            raceTimer.StartTimer();
+
+        Debug.Log("RACE STARTED: Kart unfrozen. WASD should now work.", this);
     }
 
     public void CheckpointPassed(int checkpointNumber)
     {
-        if (raceFinished)
+        if (!raceStarted || raceFinished)
             return;
 
-        // Checkpoints must be passed in order
         if (checkpointNumber != currentCheckpoint + 1)
-        {
             return;
-        }
 
         currentCheckpoint = checkpointNumber;
 
-        Debug.Log(
-            "Checkpoint passed: " +
-            checkpointNumber
-        );
-
-        // Last checkpoint reached
         if (currentCheckpoint >= totalCheckpoints - 1)
-        {
             CompleteLap();
-        }
     }
 
-    void CompleteLap()
+    private void CompleteLap()
     {
         currentCheckpoint = -1;
 
@@ -191,40 +170,22 @@ public class RaceManager : MonoBehaviour
 
         currentLap++;
 
-        Debug.Log(
-            "Lap completed! Current lap: " +
-            currentLap
-        );
-
         if (lapCounter != null)
-        {
-            lapCounter.SetLap(
-                currentLap,
-                totalLaps
-            );
-        }
+            lapCounter.SetLap(currentLap, totalLaps);
+
+        Debug.Log("Lap completed: " + currentLap);
     }
 
-    void FinishRace()
+    private void FinishRace()
     {
         raceFinished = true;
 
-        Debug.Log("RACE FINISHED!");
-
-        if (playerCar != null)
-        {
-            KartController kart =
-                playerCar.GetComponent<KartController>();
-
-            if (kart != null)
-            {
-                kart.SetFrozen(true);
-            }
-        }
+        if (playerKart != null)
+            playerKart.SetFrozen(true);
 
         if (raceTimer != null)
-        {
             raceTimer.StopTimer();
-        }
+
+        Debug.Log("RACE FINISHED!");
     }
 }
