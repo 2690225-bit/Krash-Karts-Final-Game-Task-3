@@ -45,11 +45,14 @@ public class BotControl : MonoBehaviour
 
     [Header("Misc")]
     [SerializeField] int lookAheadPoints;
-    [SerializeField, Range(0f, 1f)] float lookAheadTimeDistance;
+    [SerializeField] float lookAheadDistance;
+    [SerializeField] float brainMotorScalar = 10f;
+    [SerializeField] float brainBrakeScalar = 3f;
+    [SerializeField] float brainSteeringScalar = 2f;
 
-    float motorTorque;
-    float brakeTorque;
-    float steeringAngle;
+    float motorTorque = 0f;
+    float brakeTorque = 0f;
+    float steeringAngle = 0f;
 
     List<float> inputs;
 
@@ -80,15 +83,17 @@ public class BotControl : MonoBehaviour
         }
 
 
-        foreach(WheelCollider wheel in drivingWheels)
+        for(int i = 0; i < drivingWheels.Count; i++)
         {
-            wheel.motorTorque = motorTorque;
-            wheel.brakeTorque = brakeTorque;
+            drivingWheels[i].motorTorque = motorTorque;
+            //drivingWheels[i].brakeTorque = brakeTorque;
         }
-        foreach(WheelCollider steeringWheel in steeringWheels)
+        for(int i = 0; i < steeringWheels.Count; i++)
         {
-            steeringWheel.steerAngle = steeringAngle;
+            steeringWheels[i].steerAngle = steeringAngle;
         }
+
+        Debug.Log($"{drivingWheels[0].motorTorque} : {drivingWheels[0].brakeTorque} : {steeringWheels[0].steerAngle}");
 
         float d = Vector3.Distance(transform.position, previousFramePosition);
         previousFramePosition = transform.position;
@@ -97,9 +102,13 @@ public class BotControl : MonoBehaviour
 
     private void GetBrainOutput()
     {
-        motorTorque = Mathf.Clamp(motorControl.Calculate(inputs), minMaxMotorTorque.x, minMaxMotorTorque.y);
-        brakeTorque = Mathf.Clamp(brakeControl.Calculate(inputs), minMaxBrakeTorque.x, minMaxMotorTorque.y);
-        steeringAngle = Mathf.Clamp(steeringControl.Calculate(inputs), -steeringAngle, steeringAngle);
+        float motor = motorControl.Calculate(inputs);
+        //float brake = brakeControl.Calculate(inputs);
+        float steer = steeringControl.Calculate(inputs);
+
+        motorTorque = Mathf.Clamp(motor * brainMotorScalar, minMaxMotorTorque.x, minMaxMotorTorque.y);
+        //brakeTorque = Mathf.Clamp(brake * brainBrakeScalar, minMaxBrakeTorque.x, minMaxBrakeTorque.y);
+        steeringAngle = Mathf.Clamp(steer * brainSteeringScalar, -maxSteeringAngle, maxSteeringAngle);
     }
 
     public float GetVelocity()
@@ -132,7 +141,7 @@ public class BotControl : MonoBehaviour
 
         for(int i = 0; i < lookAheadPoints; i++)
         {
-            Vector3 tangent = roadSpline.EvaluateTangent(Mathf.Repeat(t + lookAheadTimeDistance * i, 1f));
+            Vector3 tangent = roadSpline.EvaluateTangent(Mathf.Repeat(t + Mathf.Repeat(lookAheadDistance / roadSpline.CalculateLength(), 1f) * i, 1f));
 
             lookAheadRelativeDirections.Add(Vector3.Dot(transform.forward, tangent));
         }

@@ -1169,11 +1169,14 @@ MonoBehaviour:
   - {fileID: 5302124615817929503}
   rb: {fileID: 7895303385861907228}
   minMaxMotorTorque: {x: 0, y: 1200}
-  minMaxBrakeTorque: {x: 0, y: 1800}
+  minMaxBrakeTorque: {x: 0, y: 0}
   maxSteeringAngle: 40
   minimumHeight: -10
   lookAheadPoints: 2
-  lookAheadTimeDistance: 0.02
+  lookAheadDistance: 5
+  brainMotorScalar: 0.5
+  brainBrakeScalar: 0.1
+  brainSteeringScalar: 1
 --- !u!1 &8363046277463204426
 GameObject:
   m_ObjectHideFlags: 0

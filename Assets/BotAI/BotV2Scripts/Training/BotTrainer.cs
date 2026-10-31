@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -6,21 +7,20 @@ using UnityEngine.Splines;
 
 public class BotTrainer : MonoBehaviour
 {
+    [SerializeField] NeuralContainer preTrainedBrain;
+
     [SerializeField] GameObject botPrefab;
     [SerializeField] SplineContainer roadSpline;
     [SerializeField] TextMeshProUGUI generationCountText;
 
     [Header("Training")]
+    [SerializeField] float spawnPosOnSpline;
+    [SerializeField] bool spawnOnRandomPoint = true;
     [SerializeField] int amountToTrainPerGeneration;
     [SerializeField] float generationTrainingTime;
     [SerializeField] int inputCount = 10;
     [SerializeField] float minimumYPosition = -0.25f;
-    [SerializeField] float pointsForBeingAboveExpectedVelocity;
-    [SerializeField] float penaltyForBeingBelowExpectedVelocity;
-    [SerializeField] float expectedVelocity = 10f;
-    [SerializeField, Range(-1f, 1f)] float forwardFacingScoreRigidity = 0.5f;
-    [SerializeField] float forwardFacingMultiplier;
-    [SerializeField] float speedMultiplier;
+    [SerializeField] bool onlyUseBestBot;
 
 
     [Header("Brain Settings")]
@@ -29,11 +29,9 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] int brainLayers;
     [SerializeField] int brainNodes;
     [SerializeField] string brainSavePath = "Assets/Saved_Brains/NewBrain.asset";
+    [SerializeField] string scoreOverTimeSavePath = "Assets/ScoreOverTime.csv";
 
     List<BotReference> bots;
-
-    List<float> cumulativeDistanceTravelled;
-    List<float> cumulativeFacingDirection;
 
     float timer_GenerationLifetime;
 
@@ -43,15 +41,19 @@ public class BotTrainer : MonoBehaviour
 
     int generationNumber;
 
-    float fallOffPenalty;
-
-    int botsDeactivated = 0;
+    List<float> highestValues;
+    List<float> lowestValues;
+    List<float> generationMeanScore;
+    List<float> generationMedianScore;
 
     private void Start()
     {
         bots = new List<BotReference>();
-        cumulativeDistanceTravelled = new List<float>();
-        cumulativeFacingDirection = new List<float>();
+
+        highestValues = new List<float>();
+        lowestValues = new List<float>();
+        generationMeanScore = new List<float>();
+        generationMedianScore = new List<float>();
 
         for(int i = 0; i < amountToTrainPerGeneration; i++)
         {
@@ -59,22 +61,27 @@ public class BotTrainer : MonoBehaviour
             NeuralScript b = new NeuralScript();
             NeuralScript s = new NeuralScript();
 
-            m.SetupInputLayer(inputCount);
-            b.SetupInputLayer(inputCount);
-            s.SetupInputLayer(inputCount);
+            if(preTrainedBrain == null)
+            {
+                m.SetupInputLayer(inputCount);
+                b.SetupInputLayer(inputCount);
+                s.SetupInputLayer(inputCount);
 
-            m.InitializeNodes(brainLayers, brainNodes);
-            b.InitializeNodes(brainLayers, brainNodes);
-            s.InitializeNodes(brainLayers, brainNodes);
+                m.InitializeNodes(brainLayers, brainNodes);
+                b.InitializeNodes(brainLayers, brainNodes);
+                s.InitializeNodes(brainLayers, brainNodes);
 
-            m.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
-            b.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
-            s.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
+                m.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
+                b.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
+                s.RandomiseAll(minMaxBeginningRandomValues.x, minMaxBeginningRandomValues.y);
+            }
+            else
+            {
+                preTrainedBrain.Read(out m, out b, out s);
+            }
+
 
             bots.Add(new BotReference(m, b, s, 0f, null));
-
-            cumulativeDistanceTravelled.Add(0f);
-            cumulativeFacingDirection.Add(0f);
         }
 
         previousBestM = bots[0].motorControl;
@@ -91,22 +98,20 @@ public class BotTrainer : MonoBehaviour
 
         for(int i = 0; i < bots.Count; i++)
         {
-            float position = Random.value;
+            float position = 0f;
+            if (spawnOnRandomPoint) { position = Random.value; }
+            else { position = spawnPosOnSpline; }
 
-            BotControl bot = Instantiate(botPrefab, roadSpline.EvaluatePosition(position), Quaternion.identity).GetComponent<BotControl>();
-            bot.roadSpline = roadSpline;
+            BotControl botC = Instantiate(botPrefab, roadSpline.EvaluatePosition(position), Quaternion.identity).GetComponent<BotControl>();
+            botC.roadSpline = roadSpline;
 
-            bot.botObject = bot.gameObject;
+            botC.botObject = botC.gameObject;
 
             Vector3 tangent = roadSpline.EvaluateTangent(position);
 
-            bot.transform.forward = tangent;
+            botC.transform.forward = tangent;
 
-            bot.motorControl = bots[i].motorControl;
-            bot.brakeControl = bots[i].brakeControl;
-            bot.steeringControl = bots[i].steeringControl;
-
-            bots[i].control = bot;
+            bots[i].SetBotControl(botC);
         }
     }
 
@@ -118,7 +123,7 @@ public class BotTrainer : MonoBehaviour
 
         AccumulatePoints();
 
-        if(timer_GenerationLifetime > generationTrainingTime)
+        if(timer_GenerationLifetime >= generationTrainingTime)
         {
             timer_GenerationLifetime = 0f;
 
@@ -132,68 +137,83 @@ public class BotTrainer : MonoBehaviour
 
         for(int i = 0; i < bots.Count; i++)
         {
-            //Get dot between bot forward and road forward
-
-            if (bots[i].control.botObject.transform.position.y < minimumYPosition)
-            {
-                bots[i].control.botObject.gameObject.SetActive(false);
-                continue;
-
-                botsDeactivated++;
-
-                if(botsDeactivated >= bots.Count)
-                {
-                    timer_GenerationLifetime = generationTrainingTime;
-                }
-            }
+            //skip accumulating if the car has fallen off
+            if (bots[i].control.gameObject.activeSelf == false) { continue; }
+            if (bots[i].control.gameObject.transform.position.y < minimumYPosition) { bots[i].control.gameObject.SetActive(false); continue; }
 
 
-            if (bots[i].control.GetVelocity() >= expectedVelocity)
-            {
-                bots[i].score += pointsForBeingAboveExpectedVelocity * Time.deltaTime;
-            }
-            else
-            {
-                bots[i].score -= penaltyForBeingBelowExpectedVelocity * Time.deltaTime;
-            }
+            float distFromLastFrame = bots[i].control.distanceTravelledThisFrame;
 
-            float facing = bots[i].control.facingToRoadTangentDot * Time.deltaTime;
-
-            bots[i].score += bots[i].control.GetVelocity() * speedMultiplier * Time.deltaTime;
-            bots[i].score += Mathf.Clamp(facing + forwardFacingScoreRigidity, -1f, 1f) * forwardFacingMultiplier * Time.deltaTime;
+            bots[i].score += bots[i].control.facingToRoadTangentDot;
+            bots[i].score += distFromLastFrame;
         }
     }
 
     //Destroys the bottom 50%
     private void InitializeNewGeneration()
     {
-        //Check and sort points
-        botsDeactivated = 0;
+        //Removes all current instantiated prefabs
+        for (int i = 0; i < bots.Count; i++)
+        {
+            Destroy(bots[i].control.gameObject);
+        }
 
         //Sorts the list in descending order
         bots.Sort((p1, p2) => p2.score.CompareTo(p1.score));
 
-        //Creates two children for each of the top 50%
-        List<BotReference> newGeneration = new List<BotReference>();
+        Debug.Log($"Highest: {bots[0].score}, Lowest: {bots[bots.Count-1].score}");
 
-        for(int i = 0; i < bots.Count / 2; i++)
-        {
-            BotReference child1 = new BotReference(bots[i].motorControl, bots[i].brakeControl, bots[i].steeringControl, 0f, null);
-            BotReference child2 = new BotReference(bots[i].motorControl, bots[i].brakeControl, bots[i].steeringControl, 0f, null);
+        highestValues.Add(bots[0].score);
+        lowestValues.Add(bots[bots.Count - 1].score);
 
-            //Slightly randomises the brains of both children (evolution)
-            child1.RandomAdjustAllControls(childrenRandomAdjustment);
-            child2.RandomAdjustAllControls(childrenRandomAdjustment);
-
-            newGeneration.Add(child1);
-            newGeneration.Add(child2);
-        }
-
-        //Removes all current instantiated prefabs
+        float cumulative = 0f;
+        //get mean sccore
         for(int i = 0; i < bots.Count; i++)
         {
-            Destroy(bots[i].control.gameObject);
+            cumulative += bots[i].score;
         }
+
+        generationMeanScore.Add(cumulative / bots.Count);
+
+        float median = (bots.Count % 2 != 0) ? (bots[Mathf.FloorToInt((float)bots.Count / 2f)].score + bots[Mathf.CeilToInt((float)bots.Count / 2f)].score) / 2f : bots[bots.Count / 2].score;
+
+        generationMedianScore.Add(median);
+
+        //Creates two children for each of the top 50%
+        List<BotReference> newGeneration = new List<BotReference>();
+        
+        if(!onlyUseBestBot)
+        {
+            for (int i = 0; i < bots.Count / 2; i++)
+            {
+                BotReference child1 = new BotReference(bots[i].motorControl, bots[i].brakeControl, bots[i].steeringControl, 0f, null);
+                BotReference child2 = new BotReference(bots[i].motorControl, bots[i].brakeControl, bots[i].steeringControl, 0f, null);
+
+                //Slightly randomises the brains of both children (evolution)
+                child1.RandomAdjustAllControls(childrenRandomAdjustment);
+                child2.RandomAdjustAllControls(childrenRandomAdjustment);
+
+                newGeneration.Add(child1);
+                newGeneration.Add(child2);
+            }
+        }
+        else
+        {
+            NeuralScript m = bots[0].motorControl;
+            NeuralScript b = bots[0].brakeControl;
+            NeuralScript s = bots[0].steeringControl;
+
+            for(int i = 0; i < bots.Count; i++)
+            {
+                BotReference child = new BotReference(m, b, s, 0f, null);
+
+                child.RandomAdjustAllControls(childrenRandomAdjustment);
+
+                newGeneration.Add(child);
+            }
+        }
+
+
 
         //Saves the highest scoring brain from the old generation
         previousBestM = bots[0].motorControl;
@@ -212,8 +232,10 @@ public class BotTrainer : MonoBehaviour
         NeuralContainer saved = ScriptableObject.CreateInstance<NeuralContainer>();
 
         saved.Write(previousBestM, previousBestB, previousBestS);
+        
+        string path;
 
-        string path = brainSavePath;
+        path = brainSavePath;
 
         AssetDatabase.CreateAsset(saved, path);
 
@@ -225,7 +247,24 @@ public class BotTrainer : MonoBehaviour
         Debug.Log($"Saved new brain as {path}");
     }
 
+    public void SaveScoreOverTime()
+    {
+        string path = scoreOverTimeSavePath;
 
+        StreamWriter sr = new StreamWriter(path);
+
+        sr.WriteLine("Highest Score,Lowest Score,Mean Score,Median Score");
+
+        for(int i = 0; i < highestValues.Count; i++)
+        {
+            sr.WriteLine($"{highestValues[i].ToString()},{lowestValues[i].ToString()},{generationMeanScore[i].ToString()},{generationMedianScore[i].ToString()}");
+        }
+
+        sr.Flush();
+        sr.Close();
+
+        Debug.Log("Graph values saved successfully!");
+    }
 }
 
 //class to hold the brain, controller and score for each bot
@@ -244,6 +283,15 @@ public class BotReference
         steeringControl = steer;
         this.control = control;
         this.score = score;
+    }
+
+    public void SetBotControl(BotControl control)
+    {
+        this.control = control;
+
+        control.motorControl = motorControl;
+        control.brakeControl = brakeControl;
+        control.steeringControl = steeringControl;
     }
 
     public void RandomAdjustAllControls(float adjustAmount)
