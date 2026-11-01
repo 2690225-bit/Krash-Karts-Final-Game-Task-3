@@ -13,7 +13,7 @@ public class BotControl : MonoBehaviour
     //Network Inputs:
     //Distance From Center of Road
     //Velocity Magnitude
-    //Dot( current car direction, road tangent (from multiple point further up) )
+    //raycasts detecting road mesh
     //Current motor Torque
     //Current brake torque
     //current steering angle
@@ -28,9 +28,9 @@ public class BotControl : MonoBehaviour
     [SerializeField] public SplineContainer roadSpline;
 
     //Used for training only
-    [HideInInspector] public NeuralScript motorControl;
-    [HideInInspector] public NeuralScript brakeControl;
-    [HideInInspector] public NeuralScript steeringControl;
+    private NeuralScript motorControl;
+    private NeuralScript brakeControl;
+    private NeuralScript steeringControl;
 
     [Header("Object References")]
     [SerializeField] List<WheelCollider> drivingWheels;
@@ -49,6 +49,15 @@ public class BotControl : MonoBehaviour
     [SerializeField] float brainMotorScalar = 10f;
     [SerializeField] float brainBrakeScalar = 3f;
     [SerializeField] float brainSteeringScalar = 2f;
+    [SerializeField] Vector3 raycastOffset;
+    [SerializeField] float roadRaycastLength;
+    [SerializeField] float roadRaycastSpreadAngle;
+    [SerializeField] float roadRaycastDownAngle;
+    [SerializeField] LayerMask roadRaycastLayer;
+
+    [Header("Bot selection (training only)")]
+    [SerializeField] MeshRenderer bodyRenderer;
+    [SerializeField] Material bodyDefaultMaterial;
 
     float motorTorque = 0f;
     float brakeTorque = 0f;
@@ -56,8 +65,18 @@ public class BotControl : MonoBehaviour
 
     List<float> inputs;
 
-    private void Start()
+    bool hasStopped = false;
+
+    public void SetControls(NeuralScript m, NeuralScript b, NeuralScript s)
     {
+        motorControl = m;
+        brakeControl = b;
+        steeringControl = s;
+    }
+
+    private void Awake()
+    {
+        hasStopped = false;
         previousFramePosition = transform.position;
 
         if(botBrain != null)
@@ -68,13 +87,7 @@ public class BotControl : MonoBehaviour
 
     public void Update()
     {
-        //Completely disables the car if it falls off the track
-        if(transform.position.y < minimumHeight)
-        {
-            motorTorque = 0f;
-            brakeTorque = minMaxBrakeTorque.y;
-            steeringAngle = 0f;
-        }
+        if(hasStopped) { return; }
         else
         {
             GetInputs();
@@ -82,18 +95,18 @@ public class BotControl : MonoBehaviour
             GetBrainOutput();
         }
 
-
         for(int i = 0; i < drivingWheels.Count; i++)
         {
             drivingWheels[i].motorTorque = motorTorque;
-            //drivingWheels[i].brakeTorque = brakeTorque;
+            drivingWheels[i].brakeTorque = brakeTorque;
         }
         for(int i = 0; i < steeringWheels.Count; i++)
         {
             steeringWheels[i].steerAngle = steeringAngle;
         }
 
-        Debug.Log($"{drivingWheels[0].motorTorque} : {drivingWheels[0].brakeTorque} : {steeringWheels[0].steerAngle}");
+        Debug.DrawRay(transform.position + Vector3.up * 5f, transform.right * (steeringAngle / maxSteeringAngle) * 5f, Color.red);
+
 
         float d = Vector3.Distance(transform.position, previousFramePosition);
         previousFramePosition = transform.position;
@@ -103,11 +116,11 @@ public class BotControl : MonoBehaviour
     private void GetBrainOutput()
     {
         float motor = motorControl.Calculate(inputs);
-        //float brake = brakeControl.Calculate(inputs);
+        float brake = brakeControl.Calculate(inputs);
         float steer = steeringControl.Calculate(inputs);
 
         motorTorque = Mathf.Clamp(motor * brainMotorScalar, minMaxMotorTorque.x, minMaxMotorTorque.y);
-        //brakeTorque = Mathf.Clamp(brake * brainBrakeScalar, minMaxBrakeTorque.x, minMaxBrakeTorque.y);
+        brakeTorque = Mathf.Clamp(brake * brainBrakeScalar, minMaxBrakeTorque.x, minMaxBrakeTorque.y);
         steeringAngle = Mathf.Clamp(steer * brainSteeringScalar, -maxSteeringAngle, maxSteeringAngle);
     }
 
@@ -120,10 +133,12 @@ public class BotControl : MonoBehaviour
     {
         float centerOfRoadDist;
         float velocity;
-        List<float> lookAheadRelativeDirections = new List<float>();
         float currentMotorTorque;
         float currentBrakeTorque;
         float currentSteeringAngle;
+
+        //0 = no hit, 1 = hit
+        List<int> hitRoadRaycast = new List<int>();
 
 
         velocity = rb.linearVelocity.magnitude;
@@ -136,29 +151,68 @@ public class BotControl : MonoBehaviour
         float3 nearest;
         float t;
         SplineUtility.GetNearestPoint(roadSpline.Spline, point, out nearest, out t, 4, 2);
-
         centerOfRoadDist = Vector3.Distance(point, nearest);
+        closestPosition = nearest;
 
-        for(int i = 0; i < lookAheadPoints; i++)
+
+        Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
+
+
+        for(int i = -1; i < 2; i++)
         {
-            Vector3 tangent = roadSpline.EvaluateTangent(Mathf.Repeat(t + Mathf.Repeat(lookAheadDistance / roadSpline.CalculateLength(), 1f) * i, 1f));
+            Quaternion sideRotation = Quaternion.AngleAxis(roadRaycastSpreadAngle * (float)i, transform.up);
+            Vector3 dir = (sideRotation * downRotation) * transform.forward;
 
-            lookAheadRelativeDirections.Add(Vector3.Dot(transform.forward, tangent));
+            if(Physics.Raycast(transform.position + raycastOffset, dir, roadRaycastLength, roadRaycastLayer))
+            {
+                hitRoadRaycast.Add(1);
+            }
+            else
+            {
+                hitRoadRaycast.Add(0);
+            }
         }
+
 
         inputs = new List<float>();
 
-        closestPosition = nearest;
-        facingToRoadTangentDot = lookAheadRelativeDirections[0];
-
         inputs.Add(centerOfRoadDist);
-        inputs.Add(velocity);
-        inputs.Add(currentMotorTorque);
-        inputs.Add(currentBrakeTorque);
-        inputs.Add(currentSteeringAngle);
-        foreach(float f in lookAheadRelativeDirections)
+        //inputs.Add(velocity);
+        //inputs.Add(currentMotorTorque);
+        //inputs.Add(currentBrakeTorque);
+        //inputs.Add(currentSteeringAngle);
+        foreach(int f in hitRoadRaycast)
         {
-            inputs.Add(f);
+            inputs.Add((float)f);
+        }
+    }
+
+    public void SelectTraining(Material selectedMat)
+    {
+        bodyRenderer.material = selectedMat;
+    }
+
+    public void DeselectTraining()
+    {
+        bodyRenderer.material = bodyDefaultMaterial;
+    }
+
+    public void StopBot()
+    {
+        hasStopped = true;
+        rb.isKinematic = true;   
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
+
+        for(int i = -1; i < 2; i++)
+        {
+            Quaternion sideRotation = Quaternion.AngleAxis(roadRaycastSpreadAngle * (float)i, transform.up);
+            Vector3 dir = (sideRotation * downRotation) * transform.forward;
+
+            Gizmos.DrawRay(transform.position + raycastOffset, dir * roadRaycastLength);
         }
     }
 }

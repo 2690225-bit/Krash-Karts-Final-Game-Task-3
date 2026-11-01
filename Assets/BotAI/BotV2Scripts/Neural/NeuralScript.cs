@@ -9,6 +9,49 @@ public class NeuralScript
     NeuralLayer inputLayer;
     List<NeuralLayer> layers;
 
+    public NeuralScript ReturnCopy()
+    {
+        NeuralScript newScript = new NeuralScript();
+
+        //Creates a copy of the input layer
+        List<NeuralNode> newInputNodes = new List<NeuralNode>();
+
+        for(int i = 0; i < inputLayer.nodes.Count; i++)
+        {
+            //value and bias do not matter here
+            NeuralNode newNode = new NeuralNode(0f, inputLayer.nodes[i].weight, 0f);
+
+            newInputNodes.Add(newNode);
+        }
+
+        NeuralLayer newInputLayer = new NeuralLayer(newInputNodes);
+
+        //Creates a copy of the layers
+        List<NeuralLayer> newLayers = new List<NeuralLayer>();
+
+        for(int i = 0; i < layers.Count; i++)
+        {
+            List<NeuralNode> newNodes = new List<NeuralNode>();
+
+            for(int j = 0; j < layers[i].nodes.Count; j++)
+            {
+                newNodes.Add(new NeuralNode(
+                    layers[i].nodes[j].value,
+                    layers[i].nodes[j].weight,
+                    layers[i].nodes[j].bias
+                ));
+            }
+
+            newLayers.Add(new NeuralLayer(newNodes));
+        }
+
+        newScript.SetOutputBias(outputBias);
+        newScript.SetInputLayer(newInputLayer);
+        newScript.SetLayers(newLayers);
+
+        return newScript;
+    }
+
     public List<NeuralLayer> GetNeuralValues(out NeuralLayer inputLayer, out float outputBias)
     {
         inputLayer = this.inputLayer;
@@ -30,6 +73,21 @@ public class NeuralScript
     public void SetOutputBias(float bias)
     {
         outputBias = bias;
+    }
+
+    public NeuralLayer GetInputLayer()
+    {
+        return inputLayer;
+    }
+
+    public List<NeuralLayer> GetBrainLayers()
+    {
+        return layers;
+    }
+
+    public float GetOutputBias()
+    {
+        return outputBias;
     }
 
     public void SetupInputLayer(int numInputs)
@@ -70,8 +128,6 @@ public class NeuralScript
     {
         //this bias + Sum(previous weight * previous value)
 
-        //first layer acts as the inputs
-        //
         inputLayer.SetNodeValues(inputs);
 
         for(int i = 0; i < layers.Count + 1; i++)
@@ -106,7 +162,7 @@ public class NeuralScript
     //adds a slight random value
     public void AdjustRandom(float r)
     {
-        for (int i = 1; i < layers.Count; i++)
+        for (int i = 0; i < layers.Count; i++)
         {
             for (int j = 0; j < layers[i].nodes.Count; j++)
             {
@@ -124,7 +180,7 @@ public class NeuralScript
     //Randomises all values, weights and biases
     public void RandomiseAll(float min, float max)
     {
-        for(int i = 1; i < layers.Count; i++)
+        for(int i = 0; i < layers.Count; i++)
         {
             for(int j = 0; j < layers[i].nodes.Count; j++)
             {
@@ -152,6 +208,14 @@ public class NeuralScript
     public int GetInputNodeCount()
     {
         return inputLayer.nodes.Count;
+    }
+
+    public void ResetInputs()
+    {
+        foreach(NeuralNode n in inputLayer.nodes)
+        {
+            n.value = 0f;
+        }
     }
 }
 
