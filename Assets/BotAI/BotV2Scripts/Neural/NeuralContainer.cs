@@ -82,7 +82,7 @@ public class NeuralContainer : ScriptableObject
 
         while (saved[scanPlace] != scriptStopper)
         {
-            if (saved[scanPlace] == inputLayerIndentifier) { scanType = 1; scanPlace++; }
+            if (saved[scanPlace] == inputLayerIndentifier) { scanType = 1; scanPlace++; numCumulative = ""; }
             if (saved[scanPlace] == layerIdentifier)
             {
                 if(scanType == 1)
@@ -101,6 +101,7 @@ public class NeuralContainer : ScriptableObject
                 }
 
                 scanPlace++;
+                numCumulative = "";
             }
             else if (saved[scanPlace] == outputBiasIdentifier)
             {
@@ -110,6 +111,7 @@ public class NeuralContainer : ScriptableObject
                 scanType = 3;
 
                 scanPlace++;
+                numCumulative = "";
             }
 
             if(scanType == 1)
@@ -123,6 +125,7 @@ public class NeuralContainer : ScriptableObject
                 else if (saved[scanPlace] == nodeValueBreakKey)
                 {
                     currentNode.weight = float.Parse(numCumulative);
+                    numCumulative = "";
                 }
                 else
                 {
@@ -143,10 +146,12 @@ public class NeuralContainer : ScriptableObject
                     if (nodeValueType == 1)
                     {
                         currentNode.weight = float.Parse(numCumulative);
+                        nodeValueType++;
                     }
                     else if (nodeValueType == 2)
                     {
                         currentNode.bias = float.Parse(numCumulative);
+                        nodeValueType++;
                     }
                     else
                     {
@@ -166,6 +171,7 @@ public class NeuralContainer : ScriptableObject
                 if (saved[scanPlace] == nodeValueBreakKey)
                 {
                     output.SetOutputBias(float.Parse(numCumulative));
+                    numCumulative = "";
                 }
                 else
                 {

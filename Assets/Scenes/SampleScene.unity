@@ -862,6 +862,235 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &854919007
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 854919012}
+  - component: {fileID: 854919011}
+  - component: {fileID: 854919010}
+  - component: {fileID: 854919009}
+  - component: {fileID: 854919008}
+  m_Layer: 7
+  m_Name: Training Road 1 (Mirrored)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &854919008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854919007}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b538d964aa64cd4f8982e91d0edff36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoadBuilder
+  roadVerticies: 2000
+  roadWidth: 17
+  roadSpline: {fileID: 854919011}
+  roadMeshFilter: {fileID: 854919010}
+  roadRenderer: {fileID: 854919009}
+--- !u!23 &854919009
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854919007}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6d3cf7e927464e6468fc3c92b59b8178, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &854919010
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854919007}
+  m_Mesh: {fileID: 0}
+--- !u!114 &854919011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854919007}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dab5c7d4c32e743048dfca98e2d5914f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Splines::UnityEngine.Splines.SplineContainer
+  m_Spline:
+    m_EditModeType: 1
+    m_Knots: []
+    m_MetaData: []
+    m_Closed: 0
+    m_IntData:
+      m_Data: []
+    m_FloatData:
+      m_Data: []
+    m_Float4Data:
+      m_Data: []
+    m_ObjectData:
+      m_Data: []
+  m_Splines:
+  - m_EditModeType: 1
+    m_Knots:
+    - Position:
+        x: 0
+        y: 0
+        z: -10
+      TangentIn:
+        x: 0
+        y: 0
+        z: -1
+      TangentOut:
+        x: 0
+        y: 0
+        z: 0.25
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    - Position:
+        x: 55
+        y: 0
+        z: 132.7
+      TangentIn:
+        x: 0.0000026524067
+        y: 2.3283064e-10
+        z: -77.110985
+      TangentOut:
+        x: -0.00000074505806
+        y: 1.1641532e-10
+        z: 77.11098
+      Rotation:
+        value:
+          x: -0.000007939198
+          y: 0.09197866
+          z: -0.00008594975
+          w: 0.9957609
+    - Position:
+        x: -56.5
+        y: 0
+        z: 357.1
+      TangentIn:
+        x: 0
+        y: 0
+        z: -63.625
+      TangentOut:
+        x: 0
+        y: 0
+        z: 127.25
+      Rotation:
+        value:
+          x: -0
+          y: 0
+          z: -0
+          w: 1
+    - Position:
+        x: 0
+        y: 0
+        z: 500
+      TangentIn:
+        x: 0
+        y: 0
+        z: -0.5
+      TangentOut:
+        x: 0
+        y: 0
+        z: 1
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    m_MetaData:
+    - Mode: 3
+      Tension: 0.5
+    - Mode: 4
+      Tension: 0.5
+    - Mode: 4
+      Tension: 0.5
+    - Mode: 3
+      Tension: 0.5
+    m_Closed: 0
+    m_IntData:
+      m_Data: []
+    m_FloatData:
+      m_Data: []
+    m_Float4Data:
+      m_Data: []
+    m_ObjectData:
+      m_Data: []
+  m_Knots:
+    m_KnotsLink: []
+--- !u!4 &854919012
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 854919007}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &903856550
 GameObject:
   m_ObjectHideFlags: 0
@@ -891,9 +1120,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96f96cf776a56624c9c50095feb32fa9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotTrainer
-  preTrainedBrain: {fileID: 0}
+  preTrainedBrain: {fileID: 11400000, guid: a7a8525e55269d640b057bb758438dfb, type: 2}
   botPrefab: {fileID: 7675563706666678885, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
-  roadSpline: {fileID: 2130484532}
+  roadSplines:
+  - {fileID: 1419054836}
   generationCountText: {fileID: 787179259}
   selectedMaterial: {fileID: 2100000, guid: 5a2e9ab3522fda94aad867a5cdb58acc, type: 2}
   mainCam: {fileID: 1973872564}
@@ -902,11 +1132,14 @@ MonoBehaviour:
     m_Bits: 64
   spawnPosOnSpline: 0.01
   spawnOnRandomPoint: 0
-  amountToTrainPerGeneration: 150
-  inputCount: 4
+  amountToTrainPerGeneration: 200
+  inputCount: 2
   minimumYPosition: -0.25
-  minMaxBeginningRandomValues: {x: -0.5, y: 0.5}
-  childrenRandomAdjustment: 0.1
+  trainMotor: 1
+  trainBrakes: 1
+  trainSteering: 1
+  minMaxBeginningRandomValues: {x: -0.75, y: 0.75}
+  childrenRandomAdjustment: 0.05
   brainLayers: 3
   brainNodes: 3
   brainSavePath: Assets/BotAI/SavedBrains/NewBrain.asset
@@ -2123,7 +2356,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1419054833
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2527,7 +2760,7 @@ Transform:
   m_GameObject: {fileID: 1419054832}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 30.38, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3022,7 +3255,7 @@ Camera:
   far clip plane: 10000
   field of view: 60
   orthographic: 1
-  orthographic size: 50
+  orthographic size: 150
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -3047,7 +3280,7 @@ Transform:
   m_GameObject: {fileID: 1973872561}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: 0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 1.5, y: 43.5, z: 86.85}
+  m_LocalPosition: {x: 90, y: 43.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3206,12 +3439,12 @@ GameObject:
   - component: {fileID: 2130484530}
   - component: {fileID: 2130484529}
   m_Layer: 7
-  m_Name: StraightRoad
+  m_Name: Training Road 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2130484529
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3225,7 +3458,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadBuilder
   roadVerticies: 2000
-  roadWidth: 10
+  roadWidth: 17
   roadSpline: {fileID: 2130484532}
   roadMeshFilter: {fileID: 2130484531}
   roadRenderer: {fileID: 2130484530}
@@ -3325,12 +3558,48 @@ MonoBehaviour:
       TangentOut:
         x: 0
         y: 0
-        z: 1
+        z: 0.25
       Rotation:
         value:
           x: 0
           y: 0
           z: 0
+          w: 1
+    - Position:
+        x: -55
+        y: 0
+        z: 132.7
+      TangentIn:
+        x: 0.0000026524067
+        y: 2.3283064e-10
+        z: -77.110985
+      TangentOut:
+        x: -0.00000074505806
+        y: 1.1641532e-10
+        z: 77.11098
+      Rotation:
+        value:
+          x: -0.000007939198
+          y: 0.09197866
+          z: -0.00008594975
+          w: 0.9957609
+    - Position:
+        x: 56.5
+        y: 0
+        z: 357.1
+      TangentIn:
+        x: 0
+        y: 0
+        z: -63.625
+      TangentOut:
+        x: 0
+        y: 0
+        z: 127.25
+      Rotation:
+        value:
+          x: -0
+          y: 0
+          z: -0
           w: 1
     - Position:
         x: 0
@@ -3339,7 +3608,7 @@ MonoBehaviour:
       TangentIn:
         x: 0
         y: 0
-        z: -1
+        z: -0.5
       TangentOut:
         x: 0
         y: 0
@@ -3351,73 +3620,13 @@ MonoBehaviour:
           z: 0
           w: 1
     m_MetaData:
-    - Mode: 2
+    - Mode: 3
       Tension: 0.5
-    - Mode: 2
+    - Mode: 4
       Tension: 0.5
-    m_Closed: 1
-    m_IntData:
-      m_Data: []
-    m_FloatData:
-      m_Data: []
-    m_Float4Data:
-      m_Data: []
-    m_ObjectData:
-      m_Data: []
-  - m_EditModeType: 1
-    m_Knots:
-    - Position:
-        x: 0
-        y: 0
-        z: -10
-      TangentIn:
-        x: -0
-        y: -0
-        z: -0
-      TangentOut:
-        x: 0
-        y: 0
-        z: 0
-      Rotation:
-        value:
-          x: 0
-          y: 0
-          z: 0
-          w: 1
-    m_MetaData:
-    - Mode: 0
+    - Mode: 4
       Tension: 0.5
-    m_Closed: 0
-    m_IntData:
-      m_Data: []
-    m_FloatData:
-      m_Data: []
-    m_Float4Data:
-      m_Data: []
-    m_ObjectData:
-      m_Data: []
-  - m_EditModeType: 1
-    m_Knots:
-    - Position:
-        x: 0
-        y: 0
-        z: -10
-      TangentIn:
-        x: -0
-        y: -0
-        z: -0
-      TangentOut:
-        x: 0
-        y: 0
-        z: 0
-      Rotation:
-        value:
-          x: 0
-          y: 0
-          z: 0
-          w: 1
-    m_MetaData:
-    - Mode: 0
+    - Mode: 3
       Tension: 0.5
     m_Closed: 0
     m_IntData:
@@ -3429,14 +3638,7 @@ MonoBehaviour:
     m_ObjectData:
       m_Data: []
   m_Knots:
-    m_KnotsLink:
-    - Knots:
-      - Spline: 1
-        Knot: 0
-      - Spline: 0
-        Knot: 0
-      - Spline: 2
-        Knot: 0
+    m_KnotsLink: []
 --- !u!4 &2130484533
 Transform:
   m_ObjectHideFlags: 0
@@ -3542,3 +3744,4 @@ SceneRoots:
   - {fileID: 99052700}
   - {fileID: 1419054837}
   - {fileID: 2130484533}
+  - {fileID: 854919012}

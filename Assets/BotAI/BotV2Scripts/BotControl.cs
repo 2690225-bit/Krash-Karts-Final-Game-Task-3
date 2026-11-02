@@ -44,8 +44,6 @@ public class BotControl : MonoBehaviour
     [SerializeField] float minimumHeight;
 
     [Header("Misc")]
-    [SerializeField] int lookAheadPoints;
-    [SerializeField] float lookAheadDistance;
     [SerializeField] float brainMotorScalar = 10f;
     [SerializeField] float brainBrakeScalar = 3f;
     [SerializeField] float brainSteeringScalar = 2f;
@@ -133,18 +131,10 @@ public class BotControl : MonoBehaviour
     {
         float centerOfRoadDist;
         float velocity;
-        float currentMotorTorque;
-        float currentBrakeTorque;
-        float currentSteeringAngle;
-
-        //0 = no hit, 1 = hit
-        List<int> hitRoadRaycast = new List<int>();
-
+        float tangentCross;
+        float checkAhead;
 
         velocity = rb.linearVelocity.magnitude;
-        currentMotorTorque = motorTorque;
-        currentBrakeTorque = brakeTorque;
-        currentSteeringAngle = steeringAngle;
 
         float3 point = transform.position;
 
@@ -154,37 +144,30 @@ public class BotControl : MonoBehaviour
         centerOfRoadDist = Vector3.Distance(point, nearest);
         closestPosition = nearest;
 
+        tangentCross = Mathf.Clamp01(Vector3.Cross(transform.forward, roadSpline.EvaluateTangent(t)).y) * centerOfRoadDist;
+
 
         Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
 
+        checkAhead = velocity;
 
-        for(int i = -1; i < 2; i++)
+        if(Physics.Raycast(transform.position, downRotation * transform.forward, roadRaycastLength, roadRaycastLayer))
         {
-            Quaternion sideRotation = Quaternion.AngleAxis(roadRaycastSpreadAngle * (float)i, transform.up);
-            Vector3 dir = (sideRotation * downRotation) * transform.forward;
-
-            if(Physics.Raycast(transform.position + raycastOffset, dir, roadRaycastLength, roadRaycastLayer))
-            {
-                hitRoadRaycast.Add(1);
-            }
-            else
-            {
-                hitRoadRaycast.Add(0);
-            }
+            checkAhead *= 1f;
+        }
+        else
+        {
+            checkAhead *= 0f;
         }
 
 
         inputs = new List<float>();
 
-        inputs.Add(centerOfRoadDist);
-        //inputs.Add(velocity);
+        inputs.Add(tangentCross);
+        inputs.Add(checkAhead);
         //inputs.Add(currentMotorTorque);
         //inputs.Add(currentBrakeTorque);
         //inputs.Add(currentSteeringAngle);
-        foreach(int f in hitRoadRaycast)
-        {
-            inputs.Add((float)f);
-        }
     }
 
     public void SelectTraining(Material selectedMat)
@@ -206,13 +189,6 @@ public class BotControl : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
-
-        for(int i = -1; i < 2; i++)
-        {
-            Quaternion sideRotation = Quaternion.AngleAxis(roadRaycastSpreadAngle * (float)i, transform.up);
-            Vector3 dir = (sideRotation * downRotation) * transform.forward;
-
-            Gizmos.DrawRay(transform.position + raycastOffset, dir * roadRaycastLength);
-        }
+        Gizmos.DrawRay(transform.position + raycastOffset, downRotation * transform.forward * roadRaycastLength);
     }
 }

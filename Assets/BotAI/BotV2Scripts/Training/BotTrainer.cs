@@ -13,7 +13,7 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] NeuralContainer preTrainedBrain;
 
     [SerializeField] GameObject botPrefab;
-    [SerializeField] SplineContainer roadSpline;
+    [SerializeField] List<SplineContainer> roadSplines;
     [SerializeField] TextMeshProUGUI generationCountText;
     [SerializeField] Material selectedMaterial;
     [SerializeField] Camera mainCam;
@@ -25,7 +25,9 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] int amountToTrainPerGeneration;
     [SerializeField] int inputCount = 10;
     [SerializeField] float minimumYPosition = -0.25f;
-
+    [SerializeField] bool trainMotor = true;
+    [SerializeField] bool trainBrakes = true;
+    [SerializeField] bool trainSteering = true;
 
     [Header("Brain Settings")]
     [SerializeField] Vector2 minMaxBeginningRandomValues;
@@ -95,6 +97,10 @@ public class BotTrainer : MonoBehaviour
             else
             {
                 preTrainedBrain.Read(out m, out b, out s);
+
+                if(trainMotor) m.AdjustRandom(childrenRandomAdjustment);
+                if(trainBrakes) b.AdjustRandom(childrenRandomAdjustment);
+                if(trainSteering) s.AdjustRandom(childrenRandomAdjustment);
             }
 
 
@@ -112,6 +118,15 @@ public class BotTrainer : MonoBehaviour
     private void RunGeneration()
     {
         generationNumber++;
+        int r = Random.Range(0, roadSplines.Count);
+
+        for(int i = 0; i < roadSplines.Count; i++)
+        {
+            if(i == r) { roadSplines[i].gameObject.SetActive(true); continue; }
+
+            roadSplines[i].gameObject.SetActive(false);
+        }
+
 
         for(int i = 0; i < bots.Count; i++)
         {
@@ -119,12 +134,12 @@ public class BotTrainer : MonoBehaviour
             if (spawnOnRandomPoint) { position = Random.value; }
             else { position = spawnPosOnSpline; }
 
-            BotControl botC = Instantiate(botPrefab, roadSpline.EvaluatePosition(position), Quaternion.identity).GetComponent<BotControl>();
-            botC.roadSpline = roadSpline;
+            BotControl botC = Instantiate(botPrefab, roadSplines[r].EvaluatePosition(position), Quaternion.identity).GetComponent<BotControl>();
+            botC.roadSpline = roadSplines[r];
 
             botC.botObject = botC.gameObject;
 
-            Vector3 tangent = roadSpline.EvaluateTangent(position);
+            Vector3 tangent = roadSplines[r].EvaluateTangent(position);
 
             botC.transform.forward = tangent;
 
@@ -206,9 +221,9 @@ public class BotTrainer : MonoBehaviour
             b.ResetInputs();
             s.ResetInputs();
 
-            m.AdjustRandom(childrenRandomAdjustment);
-            b.AdjustRandom(childrenRandomAdjustment);
-            s.AdjustRandom(childrenRandomAdjustment);
+            if(trainMotor) m.AdjustRandom(childrenRandomAdjustment);
+            if(trainBrakes) b.AdjustRandom(childrenRandomAdjustment);
+            if(trainSteering) s.AdjustRandom(childrenRandomAdjustment);
 
             BotReference newBot = new BotReference(m, b, s, 0f, null);
 
