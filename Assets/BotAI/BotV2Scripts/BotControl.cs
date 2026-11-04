@@ -94,7 +94,7 @@ public class BotControl : MonoBehaviour
 
     public void Update()
     {
-        if(hasStopped) { return; }
+        if(hasStopped) { distanceTravelledThisFrame = 0f;  return; }
         else
         {
             GetInputs();

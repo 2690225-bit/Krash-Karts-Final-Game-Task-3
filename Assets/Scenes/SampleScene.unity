@@ -1142,7 +1142,7 @@ MonoBehaviour:
   useSelfTraining: 1
   selfTrainingTime: 30
   numTopSelected: 5
-  distanceTravelledExponentialScalar: 1.034
+  distanceTravelledExponentialScalar: 1.04
   minMaxBeginningRandomValues: {x: -2, y: 2}
   childrenRandomAdjustment: 0.12
   brainLayers: 4
