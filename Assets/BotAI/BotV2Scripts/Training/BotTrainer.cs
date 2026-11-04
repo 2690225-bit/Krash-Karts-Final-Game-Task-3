@@ -199,8 +199,8 @@ public class BotTrainer : MonoBehaviour
             if (bots[i].control.gameObject.transform.position.y < minimumYPosition) { bots[i].control.StopBot(); bots[i].score -= fallOffPenalty; continue; }
 
             bots[i].score += forwardMoveScalar * bots[i].control.forwardProgress;
-            bots[i].score += facingDirScalar * bots[i].control.facingToRoadTangentDot;
-            bots[i].score -= steerJerkPenaltyScalar * bots[i].control.steeringTargetChange;
+            bots[i].score += facingDirScalar * bots[i].control.facingToRoadTangentDot * Time.deltaTime;
+            bots[i].score -= steerJerkPenaltyScalar * bots[i].control.steeringTargetChange * Time.deltaTime;
         }
     }
 

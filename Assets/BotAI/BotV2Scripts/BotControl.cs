@@ -58,7 +58,7 @@ public class BotControl : MonoBehaviour
 
     
 
-    float previousProgress = 0f;
+    Vector3 previousProgress = Vector3.zero;
     float previousSteeringTarget;
 
     List<float> inputs;
@@ -76,7 +76,7 @@ public class BotControl : MonoBehaviour
     {
         hasStopped = false;
 
-        SplineUtility.GetNearestPoint(roadSpline.Spline, transform.position, out float3 nearest, out previousProgress, 4, 2);
+        previousProgress = transform.position;
 
         previousSteeringTarget = steeringAngle;
 
@@ -144,32 +144,29 @@ public class BotControl : MonoBehaviour
         centerOfRoadDist = Vector3.Distance(point, nearest);
         closestPosition = nearest;
 
-        float current = t;
+        Vector3 current = transform.position;
 
-        float d = current - previousProgress;
+        float d = Vector3.Distance(transform.position, previousProgress);
 
         previousProgress = current;
 
-        if(d < 0.5f)
+        if(Mathf.Abs(d) < 0.005f)
         {
-            d += 1f;
-        }
-        else if(d > 0.5f)
-        {
-            d -= 1f;
+            d = 0f; //too small to count
         }
 
-        forwardProgress = d * roadSpline.CalculateLength();
+        forwardProgress = d;
 
-        float currentSteer = steeringAngle;
-        float s = currentSteer - previousSteeringTarget;
+
+        float currentSteer = Mathf.Abs(steeringAngle);
+        float s = Mathf.Abs(currentSteer - previousSteeringTarget);
         previousSteeringTarget = currentSteer;
 
         steeringTargetChange = s / maxSteeringAngle;
 
         dirToRoad = Mathf.Clamp01(Vector3.Dot(transform.forward, roadSpline.EvaluateTangent(t)));
 
-        facingToRoadTangentDot = dirToRoad * Time.deltaTime;
+        facingToRoadTangentDot = dirToRoad;
 
 
         inputs = new List<float>();
