@@ -1120,7 +1120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96f96cf776a56624c9c50095feb32fa9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotTrainer
-  preTrainedBrain: {fileID: 11400000, guid: a7a8525e55269d640b057bb758438dfb, type: 2}
+  preTrainedBrain: {fileID: 0}
   botPrefab: {fileID: 7675563706666678885, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
   roadSplines:
   - {fileID: 1419054836}
@@ -1130,18 +1130,23 @@ MonoBehaviour:
   carLayer:
     serializedVersion: 2
     m_Bits: 64
-  spawnPosOnSpline: 0.01
-  spawnOnRandomPoint: 0
+  spawnPosOnSpline: 0
+  individuallySpawnOnRandomPoint: 0
   amountToTrainPerGeneration: 200
   inputCount: 2
   minimumYPosition: -0.25
   trainMotor: 1
   trainBrakes: 1
-  trainSteering: 1
-  minMaxBeginningRandomValues: {x: -0.75, y: 0.75}
-  childrenRandomAdjustment: 0.05
-  brainLayers: 3
-  brainNodes: 3
+  trainSteering: 0
+  generationStartOnRandomPoint: 1
+  useSelfTraining: 1
+  selfTrainingTime: 30
+  numTopSelected: 5
+  distanceTravelledExponentialScalar: 1.034
+  minMaxBeginningRandomValues: {x: -2, y: 2}
+  childrenRandomAdjustment: 0.12
+  brainLayers: 4
+  brainNodes: 4
   brainSavePath: Assets/BotAI/SavedBrains/NewBrain.asset
   scoreOverTimeSavePath: Assets/ScoreOverTime.csv
 --- !u!4 &903856552
@@ -3665,11 +3670,11 @@ PrefabInstance:
     - target: {fileID: 2818307286988549165, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: botBrain
       value: 
-      objectReference: {fileID: 11400000, guid: 1877c0ddbb2606b4c9d3283398d0906c, type: 2}
+      objectReference: {fileID: 11400000, guid: 1a97344c0e292514f953ba96bba7cdca, type: 2}
     - target: {fileID: 2818307286988549165, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: roadSpline
       value: 
-      objectReference: {fileID: 1256140687}
+      objectReference: {fileID: 1419054836}
     - target: {fileID: 7073321550921463000, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -3688,7 +3693,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.5813089
+      value: 0.99414414
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalRotation.x
@@ -3696,7 +3701,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.813683
+      value: -0.10806238
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalRotation.z
@@ -3708,7 +3713,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -108.915
+      value: -12.407
       objectReference: {fileID: 0}
     - target: {fileID: 7255187842441330901, guid: 1c532d81428fa9d4f9a3839bd43f08dd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z

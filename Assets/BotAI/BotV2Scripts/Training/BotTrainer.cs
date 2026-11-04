@@ -21,13 +21,18 @@ public class BotTrainer : MonoBehaviour
 
     [Header("Training")]
     [SerializeField] float spawnPosOnSpline;
-    [SerializeField] bool spawnOnRandomPoint = true;
+    [SerializeField] bool individuallySpawnOnRandomPoint = true;
     [SerializeField] int amountToTrainPerGeneration;
     [SerializeField] int inputCount = 10;
     [SerializeField] float minimumYPosition = -0.25f;
     [SerializeField] bool trainMotor = true;
     [SerializeField] bool trainBrakes = true;
     [SerializeField] bool trainSteering = true;
+    [SerializeField] bool generationStartOnRandomPoint;
+    [SerializeField] bool useSelfTraining;
+    [SerializeField] float selfTrainingTime;
+    [SerializeField] int numTopSelected = 5;
+    [SerializeField] float distanceTravelledExponentialScalar = 1.034f;
 
     [Header("Brain Settings")]
     [SerializeField] Vector2 minMaxBeginningRandomValues;
@@ -39,20 +44,24 @@ public class BotTrainer : MonoBehaviour
 
     List<BotReference> bots;
 
+    List<float> distanceTravelledAccumulative;
+
     NeuralScript previousBestM;
     NeuralScript previousBestB;
     NeuralScript previousBestS;
 
     int generationNumber;
 
-    List<float> highestDistance;
-    List<float> lowestDistance;
-    List<float> generationMeanDistance;
-    List<float> generationMedianDistance;
+    List<float> highestScore;
+    List<float> lowestScore;
+    List<float> generationMeanScore;
+    List<float> generationMedianScore;
 
     List<BotReference> selectedBest = new List<BotReference>();
 
     BotReference bestFromLastGen;
+
+    float timer_GenerationTime = 0f;
 
     private void Awake()
     {
@@ -68,14 +77,17 @@ public class BotTrainer : MonoBehaviour
         bots = new List<BotReference>();
 
         selectedBest = new List<BotReference>();
+        distanceTravelledAccumulative = new List<float>();
 
-        highestDistance = new List<float>();
-        lowestDistance = new List<float>();
-        generationMeanDistance = new List<float>();
-        generationMedianDistance = new List<float>();
+        highestScore = new List<float>();
+        lowestScore = new List<float>();
+        generationMeanScore = new List<float>();
+        generationMedianScore = new List<float>();
 
         for(int i = 0; i < amountToTrainPerGeneration; i++)
         {
+            distanceTravelledAccumulative.Add(0);
+
             NeuralScript m = new NeuralScript();
             NeuralScript b = new NeuralScript();
             NeuralScript s = new NeuralScript();
@@ -127,11 +139,12 @@ public class BotTrainer : MonoBehaviour
             roadSplines[i].gameObject.SetActive(false);
         }
 
+        if(generationStartOnRandomPoint) { spawnPosOnSpline = Random.value; }
 
         for(int i = 0; i < bots.Count; i++)
         {
             float position = 0f;
-            if (spawnOnRandomPoint) { position = Random.value; }
+            if (individuallySpawnOnRandomPoint) { position = Random.value; }
             else { position = spawnPosOnSpline; }
 
             BotControl botC = Instantiate(botPrefab, roadSplines[r].EvaluatePosition(position), Quaternion.identity).GetComponent<BotControl>();
@@ -151,7 +164,18 @@ public class BotTrainer : MonoBehaviour
     {
         generationCountText.text = "#" + generationNumber.ToString();
 
-        AccumulateDistanceTravelled();
+        if (useSelfTraining)
+        {
+            timer_GenerationTime += Time.deltaTime;
+
+            AccumulateDistanceTravelled();
+
+            if(timer_GenerationTime > selfTrainingTime)
+            {
+                timer_GenerationTime = 0;
+                StartNextGen();
+            }
+        }
     }
 
     public void StartNextGen()
@@ -169,15 +193,33 @@ public class BotTrainer : MonoBehaviour
             if (bots[i].control.gameObject.activeSelf == false) { continue; }
             if (bots[i].control.gameObject.transform.position.y < minimumYPosition) { bots[i].control.StopBot(); continue; }
 
-
             float distFromLastFrame = bots[i].control.distanceTravelledThisFrame;
-            bots[i].score += distFromLastFrame;
+
+            bots[i].score += bots[i].control.facingToRoadTangentDot;
+            distanceTravelledAccumulative[i] += distFromLastFrame;
         }
     }
 
     private void InitializeNewGeneration()
     {
-        if(selectedBest.Count == 0) { return; }
+        for(int i = 0; i < bots.Count; i++)
+        {
+            bots[i].score += Mathf.Pow(distanceTravelledExponentialScalar, distanceTravelledAccumulative[i]);
+        }
+
+        //Sorts the list in descending order
+        bots.Sort((p1, p2) => p2.score.CompareTo(p1.score));
+
+        if(useSelfTraining)
+        {
+            selectedBest.Clear();
+
+            for(int i = 0; i < numTopSelected; i++)
+            {
+                selectedBest.Add(bots[i]);
+            }
+        }
+        else if(selectedBest.Count == 0) { return; }
 
         //Removes all current instantiated prefabs
         for (int i = 0; i < bots.Count; i++)
@@ -187,21 +229,19 @@ public class BotTrainer : MonoBehaviour
         }
 
         //CODE FOR PERFORMANCE ANALYSIS
-        //Sorts the list in descending order
         
-        bots.Sort((p1, p2) => p2.score.CompareTo(p1.score));
         Debug.Log($"Highest: {bots[0].score}, Lowest: {bots[bots.Count-1].score}");
-        highestDistance.Add(bots[0].score);
-        lowestDistance.Add(bots[bots.Count - 1].score);
+        highestScore.Add(bots[0].score);
+        lowestScore.Add(bots[bots.Count - 1].score);
         float cumulative = 0f;
         //get mean sccore
         for(int i = 0; i < bots.Count; i++)
         {
             cumulative += bots[i].score;
         }
-        generationMeanDistance.Add(cumulative / bots.Count);
+        generationMeanScore.Add(cumulative / bots.Count);
         float median = (bots.Count % 2 != 0) ? (bots[Mathf.FloorToInt((float)bots.Count / 2f)].score + bots[Mathf.CeilToInt((float)bots.Count / 2f)].score) / 2f : bots[bots.Count / 2].score;
-        generationMedianDistance.Add(median);
+        generationMedianScore.Add(median);
         //===================================
         
 
@@ -311,11 +351,11 @@ public class BotTrainer : MonoBehaviour
 
         StreamWriter sr = new StreamWriter(path);
 
-        sr.WriteLine("Highest Score,Lowest Score,Mean Score,Median Score");
+        sr.WriteLine("Generation,Highest Score,Lowest Score,Mean Score,Median Score");
 
-        for(int i = 0; i < highestDistance.Count; i++)
+        for(int i = 0; i < highestScore.Count; i++)
         {
-            sr.WriteLine($"{highestDistance[i].ToString()},{lowestDistance[i].ToString()},{generationMeanDistance[i].ToString()},{generationMedianDistance[i].ToString()}");
+            sr.WriteLine($"{(i+1).ToString()},{highestScore[i].ToString()},{lowestScore[i].ToString()},{generationMeanScore[i].ToString()},{generationMedianScore[i].ToString()}");
         }
 
         sr.Flush();

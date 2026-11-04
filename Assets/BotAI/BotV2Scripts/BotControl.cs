@@ -42,6 +42,8 @@ public class BotControl : MonoBehaviour
     [SerializeField] Vector2 minMaxBrakeTorque;
     [SerializeField] float maxSteeringAngle;
     [SerializeField] float minimumHeight;
+    [SerializeField] float angleLerpSpeed;
+    [SerializeField] float torqueLerpSpeed;
 
     [Header("Misc")]
     [SerializeField] float brainMotorScalar = 10f;
@@ -79,7 +81,14 @@ public class BotControl : MonoBehaviour
 
         if(botBrain != null)
         {
-            botBrain.Read(out motorControl, out brakeControl, out steeringControl);
+            NeuralScript m;
+            NeuralScript b;
+            NeuralScript s;
+            botBrain.Read(out m, out b, out s);
+
+            motorControl = m;
+            brakeControl = b;
+            steeringControl = s;
         }
     }
 
@@ -95,12 +104,12 @@ public class BotControl : MonoBehaviour
 
         for(int i = 0; i < drivingWheels.Count; i++)
         {
-            drivingWheels[i].motorTorque = motorTorque;
-            drivingWheels[i].brakeTorque = brakeTorque;
+            drivingWheels[i].motorTorque = Mathf.Lerp(drivingWheels[i].motorTorque, motorTorque, Time.deltaTime * torqueLerpSpeed);
+            drivingWheels[i].brakeTorque = Mathf.Lerp(drivingWheels[i].brakeTorque, brakeTorque, Time.deltaTime * torqueLerpSpeed);
         }
         for(int i = 0; i < steeringWheels.Count; i++)
         {
-            steeringWheels[i].steerAngle = steeringAngle;
+            steeringWheels[i].steerAngle = Mathf.Lerp(steeringWheels[i].steerAngle, steeringAngle, Time.deltaTime * angleLerpSpeed);
         }
 
         Debug.DrawRay(transform.position + Vector3.up * 5f, transform.right * (steeringAngle / maxSteeringAngle) * 5f, Color.red);
@@ -145,6 +154,8 @@ public class BotControl : MonoBehaviour
         closestPosition = nearest;
 
         tangentCross = Mathf.Clamp01(Vector3.Cross(transform.forward, roadSpline.EvaluateTangent(t)).y) * centerOfRoadDist;
+
+        facingToRoadTangentDot = tangentCross * Time.deltaTime;
 
 
         Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);

@@ -1172,9 +1172,11 @@ MonoBehaviour:
   minMaxBrakeTorque: {x: 0, y: 500}
   maxSteeringAngle: 40
   minimumHeight: -10
+  angleLerpSpeed: 5
+  torqueLerpSpeed: 100
   brainMotorScalar: 120
   brainBrakeScalar: 10
-  brainSteeringScalar: 50
+  brainSteeringScalar: 5
   raycastOffset: {x: 0, y: 0.75, z: 0}
   roadRaycastLength: 35
   roadRaycastSpreadAngle: 25
