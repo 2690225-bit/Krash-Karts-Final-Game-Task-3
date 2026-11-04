@@ -1142,11 +1142,14 @@ MonoBehaviour:
   useSelfTraining: 1
   selfTrainingTime: 30
   numTopSelected: 5
-  distanceTravelledExponentialScalar: 1.04
+  forwardMoveScalar: 10
+  facingDirScalar: 2
+  steerJerkPenaltyScalar: 1
+  fallOffPenalty: 20
   minMaxBeginningRandomValues: {x: -2, y: 2}
   childrenRandomAdjustment: 0.12
-  brainLayers: 4
-  brainNodes: 4
+  brainLayers: 2
+  brainNodes: 8
   brainSavePath: Assets/BotAI/SavedBrains/NewBrain.asset
   scoreOverTimeSavePath: Assets/ScoreOverTime.csv
 --- !u!4 &903856552

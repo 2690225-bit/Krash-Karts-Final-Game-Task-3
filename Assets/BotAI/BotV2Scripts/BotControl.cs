@@ -20,9 +20,8 @@ public class BotControl : MonoBehaviour
     [HideInInspector] public GameObject botObject;
     [HideInInspector] public Vector3 closestPosition;
     [HideInInspector] public float facingToRoadTangentDot;
-    [HideInInspector] public float distanceTravelledThisFrame;
-
-    private Vector3 previousFramePosition;
+    [HideInInspector] public float forwardProgress;
+    [HideInInspector] public float steeringTargetChange;
 
     [SerializeField] public NeuralContainer botBrain;
     [SerializeField] public SplineContainer roadSpline;
@@ -41,7 +40,6 @@ public class BotControl : MonoBehaviour
     [SerializeField] Vector2 minMaxMotorTorque;
     [SerializeField] Vector2 minMaxBrakeTorque;
     [SerializeField] float maxSteeringAngle;
-    [SerializeField] float minimumHeight;
     [SerializeField] float angleLerpSpeed;
     [SerializeField] float torqueLerpSpeed;
 
@@ -49,11 +47,6 @@ public class BotControl : MonoBehaviour
     [SerializeField] float brainMotorScalar = 10f;
     [SerializeField] float brainBrakeScalar = 3f;
     [SerializeField] float brainSteeringScalar = 2f;
-    [SerializeField] Vector3 raycastOffset;
-    [SerializeField] float roadRaycastLength;
-    [SerializeField] float roadRaycastSpreadAngle;
-    [SerializeField] float roadRaycastDownAngle;
-    [SerializeField] LayerMask roadRaycastLayer;
 
     [Header("Bot selection (training only)")]
     [SerializeField] MeshRenderer bodyRenderer;
@@ -62,6 +55,11 @@ public class BotControl : MonoBehaviour
     float motorTorque = 0f;
     float brakeTorque = 0f;
     float steeringAngle = 0f;
+
+    
+
+    float previousProgress = 0f;
+    float previousSteeringTarget;
 
     List<float> inputs;
 
@@ -77,7 +75,10 @@ public class BotControl : MonoBehaviour
     private void Awake()
     {
         hasStopped = false;
-        previousFramePosition = transform.position;
+
+        SplineUtility.GetNearestPoint(roadSpline.Spline, transform.position, out float3 nearest, out previousProgress, 4, 2);
+
+        previousSteeringTarget = steeringAngle;
 
         if(botBrain != null)
         {
@@ -94,7 +95,7 @@ public class BotControl : MonoBehaviour
 
     public void Update()
     {
-        if(hasStopped) { distanceTravelledThisFrame = 0f;  return; }
+        if(hasStopped) { forwardProgress = 0f; return; }
         else
         {
             GetInputs();
@@ -113,11 +114,6 @@ public class BotControl : MonoBehaviour
         }
 
         Debug.DrawRay(transform.position + Vector3.up * 5f, transform.right * (steeringAngle / maxSteeringAngle) * 5f, Color.red);
-
-
-        float d = Vector3.Distance(transform.position, previousFramePosition);
-        previousFramePosition = transform.position;
-        distanceTravelledThisFrame = d;
     }
 
     private void GetBrainOutput()
@@ -139,46 +135,50 @@ public class BotControl : MonoBehaviour
     private void GetInputs()
     {
         float centerOfRoadDist;
-        float velocity;
-        float tangentCross;
-        float checkAhead;
-
-        velocity = rb.linearVelocity.magnitude;
+        float dirToRoad;
 
         float3 point = transform.position;
-
         float3 nearest;
         float t;
         SplineUtility.GetNearestPoint(roadSpline.Spline, point, out nearest, out t, 4, 2);
         centerOfRoadDist = Vector3.Distance(point, nearest);
         closestPosition = nearest;
 
-        tangentCross = Mathf.Clamp01(Vector3.Cross(transform.forward, roadSpline.EvaluateTangent(t)).y) * centerOfRoadDist;
+        float current = t;
 
-        facingToRoadTangentDot = tangentCross * Time.deltaTime;
+        float d = current - previousProgress;
 
+        previousProgress = current;
 
-        Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
-
-        checkAhead = velocity;
-
-        if(Physics.Raycast(transform.position, downRotation * transform.forward, roadRaycastLength, roadRaycastLayer))
+        if(d < 0.5f)
         {
-            checkAhead *= 1f;
+            d += 1f;
         }
-        else
+        else if(d > 0.5f)
         {
-            checkAhead *= 0f;
+            d -= 1f;
         }
+
+        forwardProgress = d * roadSpline.CalculateLength();
+
+        float currentSteer = steeringAngle;
+        float s = currentSteer - previousSteeringTarget;
+        previousSteeringTarget = currentSteer;
+
+        steeringTargetChange = s / maxSteeringAngle;
+
+        dirToRoad = Mathf.Clamp01(Vector3.Dot(transform.forward, roadSpline.EvaluateTangent(t)));
+
+        facingToRoadTangentDot = dirToRoad * Time.deltaTime;
 
 
         inputs = new List<float>();
 
-        inputs.Add(tangentCross);
-        inputs.Add(checkAhead);
-        //inputs.Add(currentMotorTorque);
-        //inputs.Add(currentBrakeTorque);
-        //inputs.Add(currentSteeringAngle);
+        inputs.Add(dirToRoad);
+        inputs.Add(centerOfRoadDist);
+        inputs.Add(motorTorque);
+        inputs.Add(brakeTorque);
+        inputs.Add(steeringAngle);
     }
 
     public void SelectTraining(Material selectedMat)
@@ -195,11 +195,6 @@ public class BotControl : MonoBehaviour
     {
         hasStopped = true;
         rb.isKinematic = true;   
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Quaternion downRotation = Quaternion.AngleAxis(roadRaycastDownAngle, transform.right);
-        Gizmos.DrawRay(transform.position + raycastOffset, downRotation * transform.forward * roadRaycastLength);
+        gameObject.SetActive(false);
     }
 }

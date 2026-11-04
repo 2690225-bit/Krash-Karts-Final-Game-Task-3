@@ -32,7 +32,12 @@ public class BotTrainer : MonoBehaviour
     [SerializeField] bool useSelfTraining;
     [SerializeField] float selfTrainingTime;
     [SerializeField] int numTopSelected = 5;
-    [SerializeField] float distanceTravelledExponentialScalar = 1.034f;
+
+    [Header("Rewards")]
+    [SerializeField] float forwardMoveScalar;
+    [SerializeField] float facingDirScalar;
+    [SerializeField] float steerJerkPenaltyScalar;
+    [SerializeField] float fallOffPenalty;
 
     [Header("Brain Settings")]
     [SerializeField] Vector2 minMaxBeginningRandomValues;
@@ -191,22 +196,16 @@ public class BotTrainer : MonoBehaviour
         {
             //skip accumulating if the car has fallen off
             if (bots[i].control.gameObject.activeSelf == false) { continue; }
-            if (bots[i].control.gameObject.transform.position.y < minimumYPosition) { bots[i].control.StopBot(); continue; }
+            if (bots[i].control.gameObject.transform.position.y < minimumYPosition) { bots[i].control.StopBot(); bots[i].score -= fallOffPenalty; continue; }
 
-            float distFromLastFrame = bots[i].control.distanceTravelledThisFrame;
-
-            bots[i].score += bots[i].control.facingToRoadTangentDot;
-            distanceTravelledAccumulative[i] += distFromLastFrame;
+            bots[i].score += forwardMoveScalar * bots[i].control.forwardProgress;
+            bots[i].score += facingDirScalar * bots[i].control.facingToRoadTangentDot;
+            bots[i].score -= steerJerkPenaltyScalar * bots[i].control.steeringTargetChange;
         }
     }
 
     private void InitializeNewGeneration()
     {
-        for(int i = 0; i < bots.Count; i++)
-        {
-            bots[i].score += Mathf.Pow(distanceTravelledExponentialScalar, distanceTravelledAccumulative[i]);
-        }
-
         //Sorts the list in descending order
         bots.Sort((p1, p2) => p2.score.CompareTo(p1.score));
 
