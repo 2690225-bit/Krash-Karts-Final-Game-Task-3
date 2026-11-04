@@ -1561,7 +1561,7 @@ MonoBehaviour:
     m_Bits: 64
   spawnPosOnSpline: 0
   individuallySpawnOnRandomPoint: 0
-  amountToTrainPerGeneration: 200
+  amountToTrainPerGeneration: 1000
   inputCount: 5
   minimumYPosition: -0.25
   trainMotor: 1
@@ -1569,7 +1569,7 @@ MonoBehaviour:
   trainSteering: 1
   generationStartOnRandomPoint: 1
   useSelfTraining: 1
-  selfTrainingTime: 15
+  selfTrainingTime: 25
   numTopSelected: 5
   forwardMoveScalar: 15
   facingDirScalar: 3
