@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using TMPro;
 
@@ -5,52 +6,51 @@ public class RaceTimer : MonoBehaviour
 {
     public TMP_Text timerText;
 
-    private float elapsedTime = 0f;
-    private bool timerRunning = false;
+    private float elapsedTime;
+    private bool isRunning;
+
+    private void Start()
+    {
+        UpdateDisplay();
+    }
+
+    private void Update()
+    {
+        if (!isRunning)
+            return;
+
+        elapsedTime += Time.deltaTime;
+        UpdateDisplay();
+    }
+
+    public void ResetTimer()
+    {
+        elapsedTime = 0f;
+        isRunning = false;
+        UpdateDisplay();
+    }
 
     public void StartTimer()
     {
-        elapsedTime = 0f;
-        timerRunning = true;
+        isRunning = true;
     }
 
     public void StopTimer()
     {
-        timerRunning = false;
-        UpdateTimerText();
+        isRunning = false;
     }
 
-    void Update()
+    private void UpdateDisplay()
     {
-        if (!timerRunning)
+        if (timerText == null)
             return;
 
-        elapsedTime += Time.deltaTime;
-
-        UpdateTimerText();
-    }
-
-    void UpdateTimerText()
-    {
-        int minutes =
-            Mathf.FloorToInt(elapsedTime / 60f);
-
-        int seconds =
-            Mathf.FloorToInt(elapsedTime % 60f);
-
+        int minutes = Mathf.FloorToInt(elapsedTime / 60f);
+        int seconds = Mathf.FloorToInt(elapsedTime % 60f);
         int milliseconds =
-            Mathf.FloorToInt(
-                (elapsedTime * 100f) % 100f
-            );
+            Mathf.FloorToInt((elapsedTime * 100f) % 100f);
 
-        if (timerText != null)
-        {
-            timerText.text = string.Format(
-                "{0:00}:{1:00}:{2:00}",
-                minutes,
-                seconds,
-                milliseconds
-            );
-        }
+        timerText.text =
+            $"{minutes:00}:{seconds:00}:{milliseconds:00}";
     }
 }
