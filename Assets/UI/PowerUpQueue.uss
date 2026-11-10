@@ -1,0 +1,184 @@
+.inventory-root {
+    position: absolute;
+    left: 24px;
+    bottom: 24px;
+    width: 560px;
+}
+
+.inventory-panel {
+    background-color: rgba(11, 18, 33, 0.94);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(53, 80, 110);
+    border-right-color: rgb(53, 80, 110);
+    border-top-color: rgb(53, 80, 110);
+    border-bottom-color: rgb(53, 80, 110);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    padding-top: 16px;
+    padding-bottom: 15px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.inventory-title {
+    color: rgb(235, 248, 255);
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.inventory-subtitle {
+    color: rgb(145, 173, 198);
+    font-size: 10px;
+    margin-bottom: 13px;
+}
+
+.slots-row {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.inventory-slot {
+    flex-basis: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    height: 112px;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    padding-left: 6px;
+    padding-right: 6px;
+    align-items: center;
+    background-color: rgb(29, 40, 58);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(65, 78, 98);
+    border-right-color: rgb(65, 78, 98);
+    border-top-color: rgb(65, 78, 98);
+    border-bottom-color: rgb(65, 78, 98);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.next-slot {
+    background-color: rgb(28, 64, 74);
+    border-left-color: rgb(45, 225, 198);
+    border-right-color: rgb(45, 225, 198);
+    border-top-color: rgb(45, 225, 198);
+    border-bottom-color: rgb(45, 225, 198);
+}
+
+.empty-slot {
+    background-color: rgb(22, 31, 46);
+}
+
+.slot-index {
+    color: rgb(163, 202, 223);
+    font-size: 10px;
+    -unity-font-style: bold;
+    margin-bottom: 7px;
+}
+
+.power-up-icon {
+    width: 38px;
+    height: 38px;
+    background-color: rgb(43, 56, 74);
+    -unity-background-scale-mode: scale-to-fit;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    margin-bottom: 7px;
+}
+
+.slot-name {
+    color: rgb(244, 248, 252);
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.empty-slot .slot-name {
+    color: rgb(114, 130, 151);
+}
+
+.active-effect {
+    color: rgb(45, 225, 198);
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 12px;
+}
+
+.use-hint {
+    color: rgb(230, 237, 245);
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 10px;
+}
+
+/* Health uses the same UIDocument and script as the inventory. */
+.health-root {
+    position: absolute;
+    left: 24px;
+    top: 24px;
+    width: 320px;
+    padding-top: 12px;
+    padding-bottom: 14px;
+    padding-left: 14px;
+    padding-right: 14px;
+    background-color: rgba(11, 18, 33, 0.94);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.health-title {
+    color: rgb(235, 248, 255);
+    font-size: 12px;
+    -unity-font-style: bold;
+    margin-bottom: 7px;
+}
+
+.health-bar {
+    height: 28px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.health-bar .unity-progress-bar__container {
+    flex-grow: 1;
+}
+
+.health-bar .unity-progress-bar__background {
+    flex-grow: 1;
+    background-color: rgb(43, 56, 74);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    overflow: hidden;
+}
+
+.health-bar .unity-progress-bar__progress {
+    background-color: rgb(33, 158, 126);
+}
+
+.health-bar .unity-progress-bar__title {
+    color: rgb(255, 255, 255);
+    font-size: 13px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}

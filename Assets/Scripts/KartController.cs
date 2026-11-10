@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -28,9 +27,16 @@ public class KartController : MonoBehaviour
 
     private bool isFrozen = false;
 
+    public float regenDelay;
+    public float regenInterval;
+    public float regenAmount;
+
+    private float nextHealTime;
+    private PowerUpManager powerUpManager;
+
+
     private void Awake()
     {
-        // Find the Rigidbody on this kart.
         rb = GetComponent<Rigidbody>();
 
         if (rb == null)
@@ -48,7 +54,6 @@ public class KartController : MonoBehaviour
             RigidbodyConstraints.FreezeRotationZ;
     }
 
-    // Restore 60 health without exceeding maximum health.
     public void RegenHealth()
     {
         health = Mathf.Min(health + 60f, maxHealth);
@@ -66,7 +71,6 @@ public class KartController : MonoBehaviour
         forwardInput = 0f;
         steeringInput = 0f;
 
-        // Read WASD and arrow-key controls.
         if (Keyboard.current != null)
         {
             // Forward.
@@ -212,5 +216,84 @@ public class KartController : MonoBehaviour
 
         if (isFrozen && rb != null)
             rb.linearVelocity = Vector3.zero;
+    }
+
+    private void Start()
+    {
+        powerUpManager = GetComponent<PowerUpManager>();
+        nextHealTime = Time.time + regenDelay;
+    }
+
+    // LateUpdate keeps regeneration running even while the kart is frozen.
+    private void LateUpdate()
+    {
+        if (health >= maxHealth)
+        {
+            return;
+        }
+
+        if (regenAmount <= 0f || regenInterval <= 0f)
+        {
+            return;
+        }
+
+        if (Time.time >= nextHealTime)
+        {
+            RegenHealth(regenAmount);
+            nextHealTime = Time.time + regenInterval;
+        }
+    }
+
+    public void RegenHealth(float amount)
+    {
+        health = Mathf.Min(health + amount, maxHealth);
+    }
+
+    public void TakeDamage(float damage, KartController attacker)
+    {
+        if (damage <= 0f)
+        {
+            return;
+        }
+
+        if (powerUpManager != null && powerUpManager.IsShieldActive())
+        {
+            return;
+        }
+
+        if (powerUpManager != null && attacker != null && attacker != this)
+        {
+            float fraction = powerUpManager.GetReflectionFraction();
+            float reflectedDamage = damage * fraction;
+            damage = damage - reflectedDamage;
+
+            if (reflectedDamage > 0f)
+            {
+                attacker.TakeReflectedDamage(reflectedDamage);
+            }
+        }
+
+        LoseHealth(damage);
+    }
+
+    public void TakeReflectedDamage(float damage)
+    {
+        if (powerUpManager != null && powerUpManager.IsShieldActive())
+        {
+            return;
+        }
+
+        LoseHealth(damage);
+    }
+
+    private void LoseHealth(float damage)
+    {
+        if (damage <= 0f)
+        {
+            return;
+        }
+
+        health = Mathf.Max(health - damage, 0f);
+        nextHealTime = Time.time + regenDelay;
     }
 }

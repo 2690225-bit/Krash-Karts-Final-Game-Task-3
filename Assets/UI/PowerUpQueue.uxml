@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="PowerUpQueue.uss" />
+    <ui:VisualElement name="HealthRoot" class="health-root">
+        <ui:Label text="HEALTH" class="health-title" />
+        <ui:ProgressBar name="HealthBar" title="HEALTH" class="health-bar" />
+    </ui:VisualElement>
+    <ui:VisualElement name="InventoryRoot" class="inventory-root">
+        <ui:VisualElement class="inventory-panel">
+            <ui:Label text="POWER-UP QUEUE" class="inventory-title" />
+            <ui:Label text="LEFT TO RIGHT  |  FIRST SLOT USED FIRST" class="inventory-subtitle" />
+
+            <ui:VisualElement class="slots-row">
+                <ui:VisualElement name="Slot1" class="inventory-slot">
+                    <ui:Label text="1  /  NEXT" class="slot-index" />
+                    <ui:VisualElement name="Icon1" class="power-up-icon" />
+                    <ui:Label name="Name1" text="EMPTY" class="slot-name" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="Slot2" class="inventory-slot">
+                    <ui:Label text="2  /  QUEUED" class="slot-index" />
+                    <ui:VisualElement name="Icon2" class="power-up-icon" />
+                    <ui:Label name="Name2" text="EMPTY" class="slot-name" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="Slot3" class="inventory-slot">
+                    <ui:Label text="3  /  QUEUED" class="slot-index" />
+                    <ui:VisualElement name="Icon3" class="power-up-icon" />
+                    <ui:Label name="Name3" text="EMPTY" class="slot-name" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:Label name="ActiveEffect" text="" class="active-effect" />
+            <ui:Label name="UseHint" text="Drive through a power-up to collect it" class="use-hint" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
